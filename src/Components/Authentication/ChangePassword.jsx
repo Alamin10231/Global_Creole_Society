@@ -1,65 +1,88 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { FaEye, FaEyeSlash } from "react-icons/fa"
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { changepassword } from "../../API/api";
+import { toast } from "sonner";
+import { Navigate, useNavigate } from "react-router-dom";
 
 function ChangePassword({ onBack, userEmail }) {
-  const [showOldPassword, setShowOldPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
+  const navigate = useNavigate();
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
     newPassword: "",
     code: "",
-  })
-
+  });
+  const changepasswordMutation = useMutation({
+    mutationFn: changepassword,
+    onSuccess: (res) => {
+      toast.success("Password Changed Successfully");
+      navigate("/feed");
+      console.log(res.data);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data || "Password Changed Failed");
+    },
+  });
   // Handle password form input change
   const handlePasswordInputChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setPasswordForm((prev) => ({
       ...prev,
       [name]: value,
-    }))
-    console.log(`Password form updated - ${name}:`, value)
-  }
+    }));
+    console.log(`Password form updated - ${name}:`, value);
+  };
 
   // Handle send code
   const handleSendCode = () => {
-    console.log("Send verification code clicked")
-    console.log("Sending code to:", userEmail)
-  }
+    console.log("Send verification code clicked");
+    console.log("Sending code to:", userEmail);
+  };
 
   // Handle password change submit
   const handlePasswordChangeSubmit = (e) => {
-    e.preventDefault()
-    console.log("Password change submitted")
-    console.log("Form Data:", passwordForm)
+    e.preventDefault();
+    console.log("Password change submitted");
+    console.log("Form Data:", passwordForm);
 
     // Reset form and go back
     setPasswordForm({
       oldPassword: "",
       newPassword: "",
       code: "",
-    })
-    onBack()
-  }
+    });
+    onBack();
+  };
 
   return (
     <div className="bg-[#FBFBFB] min-h-screen  py-6 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className=" rounded-2xl w-full max-w-lg p-6 sm:p-8">
         {/* Page Title */}
-        <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 text-center mb-8">Change Password</h2>
+        <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 text-center mb-8">
+          Change Password
+        </h2>
 
         <form onSubmit={handlePasswordChangeSubmit} className="space-y-6">
           {/* Old Password */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm text-gray-600">Old Password</label>
+              <label className="block text-sm text-gray-600">
+                Old Password
+              </label>
               <button
                 type="button"
                 onClick={() => setShowOldPassword(!showOldPassword)}
                 className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showOldPassword ? <FaEyeSlash className="text-xs" /> : <FaEye className="text-xs" />}
+                {showOldPassword ? (
+                  <FaEyeSlash className="text-xs" />
+                ) : (
+                  <FaEye className="text-xs" />
+                )}
                 <span>Hide</span>
               </button>
             </div>
@@ -76,13 +99,19 @@ function ChangePassword({ onBack, userEmail }) {
           {/* New Password */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm text-gray-600">New Password</label>
+              <label className="block text-sm text-gray-600">
+                New Password
+              </label>
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
                 className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showNewPassword ? <FaEyeSlash className="text-xs" /> : <FaEye className="text-xs" />}
+                {showNewPassword ? (
+                  <FaEyeSlash className="text-xs" />
+                ) : (
+                  <FaEye className="text-xs" />
+                )}
                 <span>Hide</span>
               </button>
             </div>
@@ -120,6 +149,7 @@ function ChangePassword({ onBack, userEmail }) {
 
           {/* Submit Button */}
           <button
+            onClick={changepasswordMutation}
             type="submit"
             className="w-full bg-gray-400 hover:bg-gray-500 text-white font-medium py-4 rounded-full transition-colors text-lg mt-8"
           >
@@ -128,7 +158,7 @@ function ChangePassword({ onBack, userEmail }) {
         </form>
       </div>
     </div>
-  )
+  );
 }
 
-export default ChangePassword
+export default ChangePassword;
