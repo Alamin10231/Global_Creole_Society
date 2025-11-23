@@ -14,3 +14,6 @@ export const changepassword = (formData: any) => {
 };
 export const profiletoggle = (name: string) =>
   API.patch("/api/accounts/profile-lock/", { name });
+export const forgetpassword = (formatData:any)=>{
+  return API.post("/api/accounts/send-otp/",formatData)
+}

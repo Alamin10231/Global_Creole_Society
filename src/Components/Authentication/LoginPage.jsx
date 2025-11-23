@@ -1,8 +1,7 @@
 import { useState } from "react";
 import AuthButton from "../Authentication/AuthButton";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-// import { signin } from "../api/authApi";
 import { toast } from "sonner";
 import { signin } from "../../API/api";
 
@@ -104,17 +103,16 @@ const LoginPage = () => {
             className="w-full"
           />
 
-
- {/* <p className="text-center text-md text-gray-600">
-        
-            <button
-              type="button"
-              onClick={() => navigate("/chnage_password")}
-              className="text-blue-500 hover:text-blue-600 font-medium cursor-pointer"
-            >
-             Forget your password
-            </button>
-          </p> */}
+          <p className="text-center text-md text-gray-600">
+            <Link to="/settings/profile_settings/forget_password">
+              <button
+                type="button"
+                className="text-blue-500 hover:text-blue-600 font-medium cursor-pointer"
+              >
+                Forget your password
+              </button>
+            </Link>
+          </p>
           {/* Signup Link */}
           <p className="text-center text-md text-gray-600">
             Don't have an account?{" "}
