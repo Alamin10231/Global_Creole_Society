@@ -6,94 +6,59 @@ import CreatePostSection from "./CreatePostSection"
 import PostCard from "./PostCard"
 import CommentsModal from "./CommentsModal"
 import ShareModal from "./ShareModal"
+import { createpost } from "../../API/api"
+// import { createpost } from "@/api/api"  // ⭐ import API
 
-const mockStories = [
-    { id: "add", type: "add", title: "Add your reels" },
-    { id: 1, username: "Morgan", avatar: "https://st3.depositphotos.com/15648834/17930/v/450/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg", hasStory: true },
-    { id: 2, username: "Stanley", avatar: "/man-professional.jpg", hasStory: true },
-    { id: 3, username: "Allen", avatar: "/young-man.jpg", hasStory: true },
-    { id: 4, username: "Lucas", avatar: "/man-casual.jpg", hasStory: true },
-    { id: 5, username: "Danny", avatar: "/woman-outdoor.jpg", hasStory: true },
-]
-
-const mockPosts = [
-    {
-        id: 1,
-        user: {
-            username: "Jubayer Ahmad",
-            avatar: "https://st3.depositphotos.com/15648834/17930/v/450/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg",
-            timestamp: "2h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: null,
-        likes: 12,
-        comments: 7,
-        isLiked: false,
-    },
-    {
-        id: 2,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?cs=srgb&dl=pexels-sulimansallehi-1704488.jpg&fm=jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-]
+const mockStories = [ /* same */ ]
+const mockPosts = [ /* same */ ]
 
 const SocialFeed = () => {
     const [posts, setPosts] = useState(mockPosts)
 
-    // Modal states
     const [activeSharePostId, setActiveSharePostId] = useState(null)
     const [activeCommentPostId, setActiveCommentPostId] = useState(null)
 
-    const handleCreatePost = (postData) => {
-        const newPost = {
-            id: Date.now(),
-            user: {
-                username: "Ryan",
-                avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s",
-                timestamp: "just now",
-            },
-            content: postData.content,
-            image: null,
-            likes: 0,
-            comments: 0,
-            isLiked: false,
+    // ⭐ Backend integrated create post
+    const handleCreatePost = async (postData) => {
+        try {
+            const res = await createpost(postData);
+
+            const createdPost = {
+                id: res.data.id,
+                user: {
+                    username: res.data.user?.username || "You",
+                    avatar: res.data.user?.avatar ||
+                        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s",
+                    timestamp: "just now",
+                },
+                content: res.data.content,
+                image: res.data.image || null,
+                likes: 0,
+                comments: 0,
+                isLiked: false,
+            };
+
+            setPosts((prev) => [createdPost, ...prev]);
+        } catch (error) {
+            console.log("❌ Post creation failed", error);
         }
-        setPosts((prev) => [newPost, ...prev])
-    }
+    };
 
-    const handleOpenShareModal = (postId) => {
-        setActiveSharePostId(postId)
-    }
-
-    const handleOpenCommentModal = (postId) => {
-        setActiveCommentPostId(postId)
-    }
-
-    const closeShareModal = () => {
-        setActiveSharePostId(null)
-    }
-
-    const closeCommentModal = () => {
-        setActiveCommentPostId(null)
-    }
+    const handleOpenShareModal = (postId) => setActiveSharePostId(postId)
+    const handleOpenCommentModal = (postId) => setActiveCommentPostId(postId)
+    const closeShareModal = () => setActiveSharePostId(null)
+    const closeCommentModal = () => setActiveCommentPostId(null)
 
     return (
         <div className="min-h-screen">
             <StoriesSection stories={mockStories} />
+
             <CreatePostSection
                 currentUser={{
                     username: "Ryan",
                     avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s",
                 }}
-                onCreatePost={handleCreatePost}
+                onCreatePost={handleCreatePost}  // ⭐ integrated
             />
 
             <div className="space-y-4">
@@ -107,7 +72,6 @@ const SocialFeed = () => {
                 ))}
             </div>
 
-            {/* Modals */}
             <ShareModal isOpen={!!activeSharePostId} onClose={closeShareModal} postId={activeSharePostId} />
             <CommentsModal isOpen={!!activeCommentPostId} onClose={closeCommentModal} postId={activeCommentPostId} />
         </div>

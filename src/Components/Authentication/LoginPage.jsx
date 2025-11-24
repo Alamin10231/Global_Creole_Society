@@ -22,8 +22,12 @@ const LoginPage = () => {
       navigate("/feed");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Login failed");
-      21;
+      console.error("❌ Login failed", err);
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.detail ||
+          "Login failed"
+      );
     },
   });
 
@@ -50,6 +54,7 @@ const LoginPage = () => {
       password: formData.password,
     };
 
+    // ✅ This calls signin(), which posts to /login/ and saves token
     LoginMutation.mutate(payload);
   };
 
@@ -71,6 +76,7 @@ const LoginPage = () => {
               onChange={handleInputChange}
               placeholder="Enter your email address"
               className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             />
           </div>
 
@@ -85,6 +91,7 @@ const LoginPage = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your password"
                 className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
               <button
                 type="button"
@@ -98,9 +105,10 @@ const LoginPage = () => {
 
           {/* Submit */}
           <AuthButton
-            text={LoginMutation.isPending ? "Logging in..." : "Log In"} // isLoading state remvoved for simplicity
+            text={LoginMutation.isPending ? "Logging in..." : "Log In"}
             type="submit"
             className="w-full"
+            disabled={LoginMutation.isPending}
           />
 
           <p className="text-center text-md text-gray-600">
@@ -113,6 +121,7 @@ const LoginPage = () => {
               </button>
             </Link>
           </p>
+
           {/* Signup Link */}
           <p className="text-center text-md text-gray-600">
             Don't have an account?{" "}

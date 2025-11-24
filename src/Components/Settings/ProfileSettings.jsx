@@ -26,15 +26,19 @@ function ProfileSettings() {
   };
 
   // Handle profile lock toggle
-  const handleProfileLockToggle = () => {
-    setIsProfileLocked(!isProfileLocked);
-    console.log("Profile Lock Status:", !isProfileLocked);
-    console.log("User Data:", userData);
-    profiletoggle(userData.name)
-      .then((res) => console.log("Toggled:", res.data))
-      .catch((err) => console.log(err));
-  };
+  const handleProfileLockToggle = async () => {
+    const newLockState = !isProfileLocked;
+    setIsProfileLocked(newLockState);
 
+    try {
+      const res = await profiletoggle();
+      console.log("Toggled:", res.data);
+    } catch (err) {
+      console.error(err);
+      // revert if API fails
+      setIsProfileLocked((prev) => !prev);
+    }
+  };
 
   // Handle change password click
   const handleChangePassword = () => {
