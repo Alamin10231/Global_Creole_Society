@@ -1,117 +1,98 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import StoriesSection from "./StoriesSection"
-import CreatePostSection from "./CreatePostSection"
-import PostCard from "./PostCard"
-import CommentsModal from "./CommentsModal"
-import ShareModal from "./ShareModal"
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import StoriesSection from "./StoriesSection";
+import CreatePostSection from "./CreatePostSection";
+import PostCard from "./PostCard";
+import CommentsModal from "./CommentsModal";
+import ShareModal from "./ShareModal";
+import { createpost, getpost, getPost } from "../../API/api";
+import { toast } from "sonner";
 
 const mockStories = [
-    { id: "add", type: "add", title: "Add your reels" },
-    { id: 1, username: "Morgan", avatar: "https://st3.depositphotos.com/15648834/17930/v/450/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg", hasStory: true },
-    { id: 2, username: "Stanley", avatar: "/man-professional.jpg", hasStory: true },
-    { id: 3, username: "Allen", avatar: "/young-man.jpg", hasStory: true },
-    { id: 4, username: "Lucas", avatar: "/man-casual.jpg", hasStory: true },
-    { id: 5, username: "Danny", avatar: "/woman-outdoor.jpg", hasStory: true },
-]
-
-const mockPosts = [
-    {
-        id: 1,
-        user: {
-            username: "Jubayer Ahmad",
-            avatar: "https://st3.depositphotos.com/15648834/17930/v/450/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg",
-            timestamp: "2h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: null,
-        likes: 12,
-        comments: 7,
-        isLiked: false,
-    },
-    {
-        id: 2,
-        user: {
-            username: "Reza",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzOkxkw4_Jroi5sHXGeyoLXKvEQdHcwNd6kuIGA-fkwbdUfh76NOlI9V_9Bi5Y0RrnMkQ&usqp=CAU",
-            timestamp: "4h ago",
-        },
-        content: "Peace On Earth A Wonderful Wish But No Way",
-        image: "https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?cs=srgb&dl=pexels-sulimansallehi-1704488.jpg&fm=jpg",
-        likes: 24,
-        comments: 15,
-        isLiked: true,
-    },
-]
+  { id: "add", type: "add", title: "Add your reels" },
+  { id: 1, username: "Morgan", avatar: "/avatar1.jpg", hasStory: true },
+  { id: 2, username: "Stanley", avatar: "/avatar2.jpg", hasStory: true },
+];
 
 const SocialFeed = () => {
-    const [posts, setPosts] = useState(mockPosts)
+  const queryClient = useQueryClient();
 
-    // Modal states
-    const [activeSharePostId, setActiveSharePostId] = useState(null)
-    const [activeCommentPostId, setActiveCommentPostId] = useState(null)
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["posts"],
+    queryFn: () => getpost({}).then((data) => data.results), // getpost now returns res.data
+  });
 
-    const handleCreatePost = (postData) => {
-        const newPost = {
-            id: Date.now(),
-            user: {
-                username: "Ryan",
-                avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s",
-                timestamp: "just now",
-            },
-            content: postData.content,
-            image: null,
-            likes: 0,
-            comments: 0,
-            isLiked: false,
+  const [activeSharePostId, setActiveSharePostId] = useState(null);
+  const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+
+  const postMutation = useMutation(createpost, {
+    onSuccess: async (data) => {
+      try {
+        const createdId = data?.id;
+        if (createdId) {
+          // Fetch authoritative post from server and insert into cache
+          const fresh = await getPost(createdId);
+          queryClient.setQueryData(["posts"], (oldData) => {
+            if (Array.isArray(oldData)) return [fresh, ...oldData];
+            if (oldData && Array.isArray(oldData.results))
+              return { ...oldData, results: [fresh, ...oldData.results] };
+            return [fresh];
+          });
+        } else {
+          queryClient.invalidateQueries(["posts"]);
         }
-        setPosts((prev) => [newPost, ...prev])
-    }
+      } catch (err) {
+        console.error("Error fetching created post:", err);
+        queryClient.invalidateQueries(["posts"]);
+      }
+      toast.success("Post created successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.detail || "Failed to create post");
+    },
+  });
 
-    const handleOpenShareModal = (postId) => {
-        setActiveSharePostId(postId)
-    }
+  const handleCreatePost = (postData) => postMutation.mutate(postData);
+  const handleOpenShareModal = (postId) => setActiveSharePostId(postId);
+  const handleOpenCommentModal = (postId) => setActiveCommentPostId(postId);
+  const closeShareModal = () => setActiveSharePostId(null);
+  const closeCommentModal = () => setActiveCommentPostId(null);
 
-    const handleOpenCommentModal = (postId) => {
-        setActiveCommentPostId(postId)
-    }
+  if (isLoading) return <p>Loading posts...</p>;
 
-    const closeShareModal = () => {
-        setActiveSharePostId(null)
-    }
+  return (
+    <div className="min-h-screen">
+      <StoriesSection stories={mockStories} />
+      <CreatePostSection
+        currentUser={JSON.parse(localStorage.getItem("profile"))?.user}
+        onCreatePost={handleCreatePost}
+      />
 
-    const closeCommentModal = () => {
-        setActiveCommentPostId(null)
-    }
+      <div className="space-y-4">
+        {posts?.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            onComment={() => handleOpenCommentModal(post.id)}
+            onShare={() => handleOpenShareModal(post.id)}
+          />
+        ))}
+      </div>
 
-    return (
-        <div className="min-h-screen">
-            <StoriesSection stories={mockStories} />
-            <CreatePostSection
-                currentUser={{
-                    username: "Ryan",
-                    avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s",
-                }}
-                onCreatePost={handleCreatePost}
-            />
+      <ShareModal
+        isOpen={!!activeSharePostId}
+        onClose={closeShareModal}
+        postId={activeSharePostId}
+      />
+      <CommentsModal
+        isOpen={!!activeCommentPostId}
+        onClose={closeCommentModal}
+        postId={activeCommentPostId}
+      />
+    </div>
+  );
+};
 
-            <div className="space-y-4">
-                {posts.map((post) => (
-                    <PostCard
-                        key={post.id}
-                        post={post}
-                        onComment={() => handleOpenCommentModal(post.id)}
-                        onShare={() => handleOpenShareModal(post.id)}
-                    />
-                ))}
-            </div>
-
-            {/* Modals */}
-            <ShareModal isOpen={!!activeSharePostId} onClose={closeShareModal} postId={activeSharePostId} />
-            <CommentsModal isOpen={!!activeCommentPostId} onClose={closeCommentModal} postId={activeCommentPostId} />
-        </div>
-    )
-}
-
-export default SocialFeed
+export default SocialFeed;
