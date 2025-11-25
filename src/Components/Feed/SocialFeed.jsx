@@ -1,81 +1,99 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import StoriesSection from "./StoriesSection"
-import CreatePostSection from "./CreatePostSection"
-import PostCard from "./PostCard"
-import CommentsModal from "./CommentsModal"
-import ShareModal from "./ShareModal"
-import { createpost } from "../../API/api"
-// import { createpost } from "@/api/api"  // ⭐ import API
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import StoriesSection from "./StoriesSection";
+import CreatePostSection from "./CreatePostSection";
+import PostCard from "./PostCard";
+import CommentsModal from "./CommentsModal";
+import ShareModal from "./ShareModal";
+// import { createpost, getpost, getPost } from "../../API/api";
+import { toast } from "sonner";
+import { createpost, getpost, getposts } from "../../API/api";
 
-const mockStories = [ /* same */ ]
-const mockPosts = [ /* same */ ]
+const mockStories = [
+  { id: "add", type: "add", title: "Add your reels" },
+  { id: 1, username: "Morgan", avatar: "/avatar1.jpg", hasStory: true },
+  { id: 2, username: "Stanley", avatar: "/avatar2.jpg", hasStory: true },
+];
 
 const SocialFeed = () => {
-    const [posts, setPosts] = useState(mockPosts)
+  const queryClient = useQueryClient();
 
-    const [activeSharePostId, setActiveSharePostId] = useState(null)
-    const [activeCommentPostId, setActiveCommentPostId] = useState(null)
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["posts"],
+    queryFn: () => getpost({}).then((data) => data.results), // getpost now returns res.data
+  });
 
-    // ⭐ Backend integrated create post
-    const handleCreatePost = async (postData) => {
-        try {
-            const res = await createpost(postData);
+  const [activeSharePostId, setActiveSharePostId] = useState(null);
+  const [activeCommentPostId, setActiveCommentPostId] = useState(null);
 
-            const createdPost = {
-                id: res.data.id,
-                user: {
-                    username: res.data.user?.username || "You",
-                    avatar: res.data.user?.avatar ||
-                        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s",
-                    timestamp: "just now",
-                },
-                content: res.data.content,
-                image: res.data.image || null,
-                likes: 0,
-                comments: 0,
-                isLiked: false,
-            };
-
-            setPosts((prev) => [createdPost, ...prev]);
-        } catch (error) {
-            console.log("❌ Post creation failed", error);
+  const postMutation = useMutation(createpost, {
+    onSuccess: async (data) => {
+      try {
+        const createdId = data?.id;
+        if (createdId) {
+          // Fetch authoritative post from server and insert into cache
+          const fresh = await getpost(createdId);
+          queryClient.setQueryData(["posts"], (oldData) => {
+            if (Array.isArray(oldData)) return [fresh, ...oldData];
+            if (oldData && Array.isArray(oldData.results))
+              return { ...oldData, results: [fresh, ...oldData.results] };
+            return [fresh];
+          });
+        } else {
+          queryClient.invalidateQueries(["posts"]);
         }
-    };
+      } catch (err) {
+        console.error("Error fetching created post:", err);
+        queryClient.invalidateQueries(["posts"]);
+      }
+      toast.success("Post created successfully!");
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.detail || "Failed to create post");
+    },
+  });
 
-    const handleOpenShareModal = (postId) => setActiveSharePostId(postId)
-    const handleOpenCommentModal = (postId) => setActiveCommentPostId(postId)
-    const closeShareModal = () => setActiveSharePostId(null)
-    const closeCommentModal = () => setActiveCommentPostId(null)
+  const handleCreatePost = (postData) => postMutation.mutate(postData);
+  const handleOpenShareModal = (postId) => setActiveSharePostId(postId);
+  const handleOpenCommentModal = (postId) => setActiveCommentPostId(postId);
+  const closeShareModal = () => setActiveSharePostId(null);
+  const closeCommentModal = () => setActiveCommentPostId(null);
 
-    return (
-        <div className="min-h-screen">
-            <StoriesSection stories={mockStories} />
+  if (isLoading) return <p>Loading posts...</p>;
 
-            <CreatePostSection
-                currentUser={{
-                    username: "Ryan",
-                    avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s",
-                }}
-                onCreatePost={handleCreatePost}  // ⭐ integrated
-            />
+  return (
+    <div className="min-h-screen">
+      <StoriesSection stories={mockStories} />
+      <CreatePostSection
+        currentUser={JSON.parse(localStorage.getItem("profile"))?.user}
+        onCreatePost={handleCreatePost}
+      />
 
-            <div className="space-y-4">
-                {posts.map((post) => (
-                    <PostCard
-                        key={post.id}
-                        post={post}
-                        onComment={() => handleOpenCommentModal(post.id)}
-                        onShare={() => handleOpenShareModal(post.id)}
-                    />
-                ))}
-            </div>
+      <div className="space-y-4">
+        {posts?.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            onComment={() => handleOpenCommentModal(post.id)}
+            onShare={() => handleOpenShareModal(post.id)}
+          />
+        ))}
+      </div>
 
-            <ShareModal isOpen={!!activeSharePostId} onClose={closeShareModal} postId={activeSharePostId} />
-            <CommentsModal isOpen={!!activeCommentPostId} onClose={closeCommentModal} postId={activeCommentPostId} />
-        </div>
-    )
-}
+      <ShareModal
+        isOpen={!!activeSharePostId}
+        onClose={closeShareModal}
+        postId={activeSharePostId}
+      />
+      <CommentsModal
+        isOpen={!!activeCommentPostId}
+        onClose={closeCommentModal}
+        postId={activeCommentPostId}
+      />
+    </div>
+  );
+};
 
-export default SocialFeed
+export default SocialFeed;
