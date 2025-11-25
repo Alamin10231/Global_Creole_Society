@@ -6,33 +6,31 @@ import LandingPageAdds from "./LandingPageAdds";
 import LandingPageSubscription from "./LandingPageSubscription";
 import LandingPagePersonalized from "./LandingPagePersonalized";
 
-
-
 const LandingPage = () => {
-    return (
-        <div className='p-10 '>
-            <section className='bg-[radial-gradient(circle, #ffffff_25%, #f6f7ff_35%, #e7e9fb_50%)]'>
-                <div className=' '>
-                    <LandingPageNavbar></LandingPageNavbar>
-                </div>
-                <div>
-                    <LangdingPageHeader></LangdingPageHeader>
-                </div>
-            </section>
-            <div>
-                <LandingPagePersonalized></LandingPagePersonalized>
-            </div>
-            <div>
-                <LandingPageSubscription></LandingPageSubscription>
-            </div>
-            <div>
-                <LandingPageAdds></LandingPageAdds>
-            </div>
-            <div>
-               <LandingPageFooter></LandingPageFooter>
-            </div>
+  return (
+    <div className="p-10 ">
+      <section className="bg-[radial-gradient(circle, #ffffff_25%, #f6f7ff_35%, #e7e9fb_50%)]">
+        <div className=" ">
+          <LandingPageNavbar></LandingPageNavbar>
         </div>
-    )
-}
+        <div>
+          <LangdingPageHeader></LangdingPageHeader>
+        </div>
+      </section>
+      <div>
+        <LandingPagePersonalized></LandingPagePersonalized>
+      </div>
+      <div>
+        <LandingPageSubscription></LandingPageSubscription>
+      </div>
+      <div>
+        <LandingPageAdds></LandingPageAdds>
+      </div>
+      <div>
+        <LandingPageFooter></LandingPageFooter>
+      </div>
+    </div>
+  );
+};
 
-export default LandingPage
+export default LandingPage;
