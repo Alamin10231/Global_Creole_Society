@@ -7,8 +7,9 @@ import CreatePostSection from "./CreatePostSection";
 import PostCard from "./PostCard";
 import CommentsModal from "./CommentsModal";
 import ShareModal from "./ShareModal";
-import { createpost, getpost, getPost } from "../../API/api";
+// import { createpost, getpost, getPost } from "../../API/api";
 import { toast } from "sonner";
+import { createpost, getpost, getposts } from "../../API/api";
 
 const mockStories = [
   { id: "add", type: "add", title: "Add your reels" },
@@ -33,7 +34,7 @@ const SocialFeed = () => {
         const createdId = data?.id;
         if (createdId) {
           // Fetch authoritative post from server and insert into cache
-          const fresh = await getPost(createdId);
+          const fresh = await getpost(createdId);
           queryClient.setQueryData(["posts"], (oldData) => {
             if (Array.isArray(oldData)) return [fresh, ...oldData];
             if (oldData && Array.isArray(oldData.results))

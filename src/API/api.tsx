@@ -83,7 +83,16 @@ export const createpost = (formData: any) =>
   API.post("/api/social/posts/create/", formData).then((res) => res.data);
 
 // Get single post by id
-export const getsinglePost = (id: string | number) =>
-  API.get(`/api/social/posts/${id}/`).then((res) => res.data);
+export const getFriendRequests = async () => {
+  const res = await API.get("/api/friends/requests/"); // your backend URL here
+  return res.data;
+};
+
+export const getAddFriends = async () => {
+  const res = await API.get("/api/friends/suggestions/"); // your backend URL here
+  return res.data;
+};
+export const requestFriend = (userId: string | number) =>
+  API.post(`/api/friends/request/${userId}/`).then((res) => res.data);
 
 export default API;
