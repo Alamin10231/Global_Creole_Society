@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://sisterlike-tastelessly-mike.ngrok-free.dev",
+  baseURL: "https://mahamudh474.pythonanywhere.com/",
 });
 
 // Attach token for every request
@@ -102,6 +102,11 @@ export const requestFriend = (userId: string | number) =>
 export const suggessionfriend = async () => {
   const res = await API.get("/api/social/friends/suggestions/");
   return res.data;
+};
+
+// notifications
+export const getNotifications = async () => {
+  return API.get("/api/social/notifications/").then((res) => res.data);
 };
 
 export default API;
