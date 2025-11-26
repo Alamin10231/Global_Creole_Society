@@ -1,3 +1,5 @@
+import React from "react";
+
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
 
@@ -10,8 +12,6 @@ import LoginPage from "../Components/Authentication/LoginPage";
 import SignUpPage from "../Components/Authentication/SignUpPage";
 import Feed from "../Components/Feed/Feed";
 import Reels from "../Components/Feed/Reels";
-import { mockReels } from "../Components/Feed/mockReels";
-import ShareModal from "../Components/Feed/ShareModal";
 import Profile from "../Profile/Profile";
 import MarketPlace from "../Components/Marketplace/MarketPlace";
 
@@ -173,10 +173,10 @@ const router = createBrowserRouter([
     path: "/settings/profile_settings/chnage_password",
     element: <ChangePassword></ChangePassword>,
   },
-    {
-        path: "/settings/profile_settings/forget_password",
-        element: <ForgetPassword></ForgetPassword>,
-    },
+  {
+    path: "/settings/profile_settings/forget_password",
+    element: <ForgetPassword></ForgetPassword>,
+  },
   {
     path: "/settings/profile_settings/chnage_email",
     element: <ChangeEmail></ChangeEmail>,

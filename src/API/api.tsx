@@ -24,6 +24,13 @@ API.interceptors.request.use((config) => {
 
 //   return API.post("/api/accounts/login/", data);
 // };
+export const signup = (formData: any) => {
+  // Remove any old token BEFORE login request
+  try {
+    localStorage.removeItem("accessToken");
+  } catch (e) {}
+  return API.post("/api/accounts/register/", formData);
+};
 export const signin = (formData: any) => {
   // Remove any old token BEFORE login request
   try {
@@ -62,8 +69,6 @@ export const signin = (formData: any) => {
   });
 };
 
-export const signup = (formData: any) =>
-  API.post("/api/accounts/register/", formData);
 export const getposts = (formData: any) =>
   API.get("/api/social/posts/", { params: formData }).then((res) => res.data);
 export const changepassword = (formData: any) =>
@@ -94,5 +99,9 @@ export const getAddFriends = async () => {
 };
 export const requestFriend = (userId: string | number) =>
   API.post(`/api/friends/request/${userId}/`).then((res) => res.data);
+export const suggessionfriend = async () => {
+  const res = await API.get("/api/social/friends/suggestions/");
+  return res.data;
+};
 
 export default API;
