@@ -1,19 +1,18 @@
 import { useState } from "react";
-import { Video, ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Video, ImageIcon } from "lucide-react";
 
 const CreatePostSection = ({ currentUser, onCreatePost }) => {
   const [postText, setPostText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const navigate = useNavigate();
 
-  // Delegates post creation to parent via `onCreatePost` prop so that
-  // mutations and cache invalidation are centralized in the feed component.
-
   const handleFileChange = (e) => {
     setSelectedFiles(Array.from(e.target.files));
   };
+
+  const avatar = currentUser?.profile_image || "/placeholder.svg";
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -24,12 +23,10 @@ const CreatePostSection = ({ currentUser, onCreatePost }) => {
     formData.append("privacy", "public");
     selectedFiles.forEach((file) => formData.append("media", file));
 
-    if (onCreatePost) {
-      onCreatePost(formData);
-      setPostText("");
-      setSelectedFiles([]);
-      toast.success("Post submitted");
-    }
+    onCreatePost(formData);
+    setPostText("");
+    setSelectedFiles([]);
+    toast.success("Post submitted");
   };
 
   return (
@@ -37,10 +34,11 @@ const CreatePostSection = ({ currentUser, onCreatePost }) => {
       <form onSubmit={handleSubmit}>
         <div className="flex space-x-3">
           <img
-            src={currentUser?.avatar || "/placeholder.svg"}
+            src={avatar}
             className="w-10 h-10 rounded-full object-cover"
             alt="avatar"
           />
+          
           <textarea
             value={postText}
             onChange={(e) => setPostText(e.target.value)}
@@ -59,6 +57,7 @@ const CreatePostSection = ({ currentUser, onCreatePost }) => {
             >
               <Video className="w-5 h-5" /> Live
             </button>
+
             <label className="flex items-center space-x-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer">
               <ImageIcon className="w-5 h-5" />
               <span className="text-sm font-medium">Media</span>
@@ -74,7 +73,7 @@ const CreatePostSection = ({ currentUser, onCreatePost }) => {
           {(postText.trim() || selectedFiles.length > 0) && (
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               Post
             </button>

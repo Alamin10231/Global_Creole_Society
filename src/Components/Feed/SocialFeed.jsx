@@ -66,10 +66,13 @@ const SocialFeed = () => {
   return (
     <div className="min-h-screen">
       <StoriesSection stories={mockStories} />
-      <CreatePostSection
+      
+          <CreatePostSection
         currentUser={JSON.parse(localStorage.getItem("profile"))?.user}
         onCreatePost={handleCreatePost}
+        post={posts}
       />
+       
 
       <div className="space-y-4">
         {posts?.map((post) => (
