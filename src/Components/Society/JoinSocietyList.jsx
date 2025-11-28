@@ -1,59 +1,91 @@
-import React, { useState } from 'react';
-import Navbar from '../Navbar';
-import { FaPlus } from 'react-icons/fa';
+import Navbar from "../Navbar";
+import { FaPlus } from "react-icons/fa";
+import { getmySocieties, getOtherSocieties } from "../../API/api";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 const JoinSocietyList = () => {
+  const { data: otherSocieties } = useQuery({
+    queryKey: ["othersocietylist"],
+    queryFn: getOtherSocieties,
+  });
+  const navigate = useNavigate();
+  const handleJoin = (e, id) => {
+    e.stopPropagation();
+    navigate(`/society/${id}`);
+  };
+  const formatRelativeTime = (dateString) => {
+    if (!dateString) return "Unknown";
+    const now = new Date();
+    const past = new Date(dateString);
+    const diff = (now - past) / 1000;
 
-    const [joinSocieties, setJoinSocieties] = useState([
-        { id: 5, name: "Society 5", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "30 mins" },
-        { id: 6, name: "Society 6", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "10 mins" },
-        { id: 7, name: "Society 7", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "2 days" },
-        { id: 8, name: "Society 8", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "1 week" },
-        { id: 5, name: "Society 5", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "30 mins" },
-        { id: 6, name: "Society 6", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "10 mins" },
-        { id: 7, name: "Society 7", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "2 days" },
-        { id: 8, name: "Society 8", logo: "https://www.shutterstock.com/image-vector/eagle-logo-fierce-vibrant-soaring-260nw-2494369867.jpg", lastActive: "1 week" },
-    ]);
+    const min = Math.floor(diff / 60);
+    const hr = Math.floor(diff / 3600);
+    const day = Math.floor(diff / 86400);
 
-    return (
-        <div className=" ">
-            <section className='py-7'>
-                <Navbar />
-            </section>
+    if (diff < 60) return "Just now";
+    if (min < 60) return `${min} minutes`;
+    if (hr < 24) return `${hr} hours`;
+    return `${day} days`;
+  };
+  return (
+    <div className=" ">
+      <section className="py-7">
+        <Navbar />
+      </section>
 
-            <section className='2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-10'>
-                {/* Header */}
-                <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl sm:text-3xl font-bold">Society</h1>
-                </div>
-
-                {/* Join Societies */}
-                <div className='flex items-center justify-between mt-5'>
-                    <h2 className="text-xl sm:text-2xl font-bold mb-2">Join Societies</h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {joinSocieties.map((society) => (
-                        <div
-                            key={society.id}
-                            className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center "
-                        >
-                            <img
-                                src={society.logo}
-                                alt={society.name}
-                                className="w-24 h-24 mb-2 object-cover rounded-full"
-                            />
-                            <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
-                            <p className="text-gray-600 text-sm sm:text-base">Last Active {society.lastActive} ago</p>
-                            <button className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
-                                Join
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </section>
+      <section className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-10">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">Society</h1>
         </div>
-    );
+
+        {/* Join Societies */}
+        <div className="flex items-center justify-between mt-5">
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">Join Societies</h2>
+        </div>
+
+        {/* Join Societies */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-10">
+          {otherSocieties?.results?.map((society) => (
+            <div
+              key={society.id}
+              onClick={() => navigate(`/society/${society.id}`)}
+              className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center
+                      text-center hover:scale-103 transition-transform cursor-pointer"
+            >
+              <img
+                src={
+                  society.cover_picture ||
+                  society.cover_image ||
+                  society.creator?.profile_image ||
+                  "/placeholder.svg"
+                }
+                alt={society.name}
+                className="w-24 h-24 mb-2 object-cover rounded-full"
+              />
+
+              <h3 className="text-lg sm:text-xl font-semibold">
+                {society.name}
+              </h3>
+
+              <p className="text-gray-600 text-sm sm:text-base">
+                Last Active {formatRelativeTime(society.updated_at)} ago
+              </p>
+
+              <button
+                onClick={(e) => handleJoin(e, society.id)}
+                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+              >
+                Join
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
 };
 
 export default JoinSocietyList;

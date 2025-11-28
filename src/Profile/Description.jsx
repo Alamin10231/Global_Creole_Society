@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import '../assets/styles/Description.css'
 
-const Description = () => {
+const Description = ({ data }) => {
     const [isEdit, setIsEdit] = useState(false)
     const [description, setDescription] = useState(
         `Mailchimp is a company based on the GitLab open-source project, helping developers collaborate on code to build great things and ship on time. We are an active participant in our global community of customers and contributors, trying to serve their needs and lead by example. We have one vision: everyone can contribute to all digital content, and our mission is to change all creative work from read-only to read-write.
@@ -49,7 +49,7 @@ We value results, transparency, sharing, freedom, efficiency, frugality, collabo
                 </div>
             ) : (
                 <p className="text-[#48555C] whitespace-pre-line truncate overflow-auto scrollbar-red">
-                    {description}
+                    {data?.description || description}
                 </p>
             )}
         </div>
