@@ -4,9 +4,28 @@ import { FaShareFromSquare } from "react-icons/fa6";
 
 const formatTimestamp = (value) => {
   if (!value) return "";
+
   try {
     const d = new Date(value);
-    return d.toLocaleString();
+
+    // ---- Time Format (8:12PM) ----
+    let hours = d.getHours();
+    let minutes = d.getMinutes();
+    let ampm = hours >= 12 ? "PM" : "AM";
+
+    hours = hours % 12 || 12; // 0 → 12
+    minutes = minutes.toString().padStart(2, "0");
+
+    const time = `${hours}:${minutes}${ampm}`;
+
+    // ---- Date Format (12 April) ----
+    const day = d.getDate();
+    const month = d.toLocaleString("en-US", { month: "long" }); // April
+
+    const date = `${day} ${month}`;
+
+    // Final output (you can return what you want)
+    return { time, date };
   } catch {
     return value;
   }
@@ -15,11 +34,11 @@ const formatTimestamp = (value) => {
 const PostCard = ({ post = {}, onComment, onShare }) => {
   // Backend may return different shapes: `user` or `author`, media as strings or objects.
   const author = post.user || post.content || post.created_by || {};
-  const avatar = author.avatar || author.profile_image || "/placeholder.svg";
-  const username = author.username || author.name || author.email || "Unknown";
+  const avatar = author.profile_image || author.profile_image || "/placeholder.svg";
+  const username = author.profile_name || author.name || author.email || "Unknown";
   const timestamp =
-    post.created_at || post.timestamp || author.timestamp || post.date;
-
+    post?.created_at || post?.timestamp || author?.timestamp || post?.date;
+  const { time, date } = formatTimestamp(timestamp) || {};
   const initialLiked = !!post.isLiked || !!post.liked;
   const initialLikes = Number(
     post.likes || post.likes_count || post.reactions || 0
@@ -33,6 +52,8 @@ const PostCard = ({ post = {}, onComment, onShare }) => {
     setIsLiked(newLikedState);
     setLikesCount((prev) => (newLikedState ? prev + 1 : Math.max(0, prev - 1)));
   };
+
+  // Use it
 
   const media = Array.isArray(post.media)
     ? post.media
@@ -52,7 +73,8 @@ const PostCard = ({ post = {}, onComment, onShare }) => {
           <div>
             <h3 className="font-semibold text-gray-900">{username}</h3>
             <p className="text-sm text-gray-500">
-              {formatTimestamp(timestamp)}
+              {/* {formatTimestamp(timestamp)} */}
+              {date} at {time}
             </p>
           </div>
         </div>

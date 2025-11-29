@@ -53,8 +53,6 @@ export const signin = (formData: any) => {
   }
 
   return API.post("/api/accounts/login/", payload).then((res) => {
-    // Attempt to extract common token fields and persist in localStorage.
-    // Adjust these names if your backend returns a different shape.
     const token =
       res.data?.token ||
       res.data?.access ||
@@ -108,5 +106,46 @@ export const suggessionfriend = async () => {
 export const getNotifications = async () => {
   return API.get("/api/social/notifications/").then((res) => res.data);
 };
+export const markNotificationAsRead = (id: string | number) => {
+  return API.post(`/api/social/notifications/mark-read/${id}/`).then(
+    (res) => res.data
+  );
+};
+// profile
+export const getprofile = () => {
+  return API.get(`/api/accounts/profile/`).then((res) => res.data);
+};
 
+export const friendlist = () => {
+  return API.get(`/api/social/friends/`).then((res) => res.data);
+};
+
+// social
+export const getOtherSocieties = () => {
+  return API.get(`/api/social/societies?exclude_my_societies=true`).then(
+    (res) => res.data
+  );
+};
+export const getmySocieties = () => {
+  return API.get(`/api/social/societies?my_societies=true`).then(
+    (res) => res.data
+  );
+};
+
+// Export the configured API instance
+export const getsocietyData = (id: string | number) => {
+  return API.get(`/api/social/societies/${id}/`).then((res) => res.data);
+};
+// show memberships
+export const getMemberships = (id: string | number) => {
+  return API.get(`/api/social/societies/${id}/members/`).then(
+    (res) => res.data
+  );
+};
+
+//single user post
+export const getsingleuserpost = (userid:string | number) => {
+  return API.get(`/api/social/posts/?user_id=${userid}&exclude_socites=true`)
+    .then((res) => res.data);
+};
 export default API;
