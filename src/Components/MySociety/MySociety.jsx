@@ -5,13 +5,16 @@ import GroupSection from "./GroupSection";
 import ShareModal from "../Feed/ShareModal";
 import CommentsModal from "../Feed/CommentsModal";
 import MyPostCard from "./MyPostCard";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getsingleuserpost,
   getsocietyData,
   getMemberships,
+  seethepost,
 } from "../../API/api";
 import { useParams } from "react-router-dom";
+import MySocietycreatepost from "./MySocietycreatepost";
+
 
 const MySociety = () => {
   const { id } = useParams();
@@ -43,11 +46,23 @@ const MySociety = () => {
     enabled: !!id,
   });
   console.log("post data test", mypostdata);
+
+  // see the post
+  const { data: seePostData } = useQuery({
+    queryKey: ["seethepost", id],
+    queryFn: () => seethepost(id),
+    enabled: !!id,
+  });
+
+  
   // ---------------------------
   // Modal States
   // ---------------------------
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+  console.log("MY POST DATA:", mypostdata);
+  console.log("RESULTS:", mypostdata?.results);
+console.log("alamin",seePostData);
 
   return (
     <div className="bg-[#F3F4F6]">
@@ -69,6 +84,21 @@ const MySociety = () => {
         {/* ====================================== */}
         <section className="col-span-8">
           <GroupSection />
+      <div className="mt-5 space-y-4">
+  {seePostData ? (
+    <MySocietycreatepost
+      key={seePostData.id}
+      currentUser={JSON.parse(localStorage.getItem("profile"))?.user}
+      profile_image={seePostData.user?.profile_image}
+      p={seePostData}
+    />
+  ) : (
+    <p className="text-center text-gray-600">No post found.</p>
+  )}
+</div>
+
+
+
 
           <div className="mt-5 space-y-4">
             {mypostdata?.results?.length > 0 ? (

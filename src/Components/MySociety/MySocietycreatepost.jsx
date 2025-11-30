@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Video, ImageIcon } from "lucide-react";
 
-const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
+
+const MySocietycreatepost = ({  p}) => {
   const [postText, setPostText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const navigate = useNavigate();
@@ -12,33 +13,31 @@ const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
     setSelectedFiles(Array.from(e.target.files));
   };
 
-  const avatar = currentUser?.profile_image || "/placeholder.svg";
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!postText.trim() && selectedFiles.length === 0) return;
 
-    const formData = new FormData();
-    formData.append("content", postText);
-    formData.append("privacy", "public");
-    selectedFiles.forEach((file) => formData.append("media", file));
+    // For now, just log the content and files
+    console.log("Post Text:", postText);
+    console.log("Selected Files:", selectedFiles);
 
-    onCreatePost(formData);
     setPostText("");
     setSelectedFiles([]);
-    toast.success("Post submitted");
+    toast.success("Post submitted (UI only, no API)");
   };
+
+  const avatar = p?.profile_image || "/placeholder.svg";
 
   return (
     <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
       <form onSubmit={handleSubmit}>
         <div className="flex space-x-3">
           <img
-            src={profile?.profile_image || "/placeholder.svg"}
+            src={avatar}
             className="w-10 h-10 rounded-full object-cover"
             alt="avatar"
           />
-          
+
           <textarea
             value={postText}
             onChange={(e) => setPostText(e.target.value)}
@@ -84,4 +83,4 @@ const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
   );
 };
 
-export default CreatePostSection;
+export default MySocietycreatepost;

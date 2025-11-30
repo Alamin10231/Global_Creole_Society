@@ -33,6 +33,7 @@ const MyPostCard = ({ post, onComment, onShare }) => {
     <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-3">
+         
           <img
             src={avatar}
             alt={username}
@@ -51,9 +52,9 @@ const MyPostCard = ({ post, onComment, onShare }) => {
         </button>
       </div>
 
+
       {/* POST TEXT */}
       <p className="text-gray-800">{post.content}</p>
-
       {/* POST MEDIA */}
       {post.media?.length > 0 &&
         post.media.map((file, i) => (

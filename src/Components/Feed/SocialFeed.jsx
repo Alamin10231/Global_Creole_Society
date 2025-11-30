@@ -9,7 +9,7 @@ import CommentsModal from "./CommentsModal";
 import ShareModal from "./ShareModal";
 // import { createpost, getpost, getPost } from "../../API/api";
 import { toast } from "sonner";
-import { createpost, getpost, getposts } from "../../API/api";
+import { createpost, getpost, getposts, seethepost } from "../../API/api";
 
 const mockStories = [
   { id: "add", type: "add", title: "Add your reels" },
@@ -23,6 +23,11 @@ const SocialFeed = () => {
   const { data: posts, isLoading } = useQuery({
     queryKey: ["posts"],
     queryFn: () => getpost({}).then((data) => data.results), // getpost now returns res.data
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => seethepost(localStorage.getItem("userId")),
   });
 
   const [activeSharePostId, setActiveSharePostId] = useState(null);
@@ -41,6 +46,16 @@ const SocialFeed = () => {
               return { ...oldData, results: [fresh, ...oldData.results] };
             return [fresh];
           });
+          // Also refresh any single-user/society post queries so other pages see the new post
+          try {
+            queryClient.invalidateQueries({
+              queryKey: ["getsingleuserpost"],
+              exact: false,
+            });
+          } catch (e) {
+            // fallback: invalidate by prefix
+            queryClient.invalidateQueries("getsingleuserpost");
+          }
         } else {
           queryClient.invalidateQueries(["posts"]);
         }
@@ -66,13 +81,16 @@ const SocialFeed = () => {
   return (
     <div className="min-h-screen">
       <StoriesSection stories={mockStories} />
-      
-          <CreatePostSection
+<div>
+  <p>this is ju</p>
+</div>
+      <CreatePostSection
         currentUser={JSON.parse(localStorage.getItem("profile"))?.user}
         onCreatePost={handleCreatePost}
-        post={posts}
+        profile={profile}
       />
-       
+
+      {/* ekahane get method diye data fetch korte hobe */}
 
       <div className="space-y-4">
         {posts?.map((post) => (
