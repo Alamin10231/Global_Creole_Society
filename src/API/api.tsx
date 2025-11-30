@@ -72,16 +72,18 @@ export const createpost = (formData: any) =>
 export const toggleLike = (postId: string | number) =>
   API.post(`/api/social/posts/${postId}/like/`).then((res) => res.data);
 // comment post
-export const commentPost = (postId:any, content:any) =>
+export const commentPost = (postId: any, content: any) =>
   API.post(`/api/social/posts/${postId}/comments/`, { content }).then(
     (res) => res.data
-  )
+  );
 
-  // see this comment 
-export const seecomments = (postId:any) =>
-  API.get(`/api/social/posts/${postId}/comments/`).then(
-    (res) => res.data
-  ); 
+// see this comment
+export const seecomments = () =>
+  API.get(`/api/social/posts/share/`).then((res) => res.data);
+
+// post share
+export const sharePost = (postId: any) =>
+  API.post(`/api/social/posts/${postId}/share/`).then((res) => res.data);
 // Get single post by id
 export const getFriendRequests = async () => {
   const res = await API.get("/api/friends/requests/"); // your backend URL here
