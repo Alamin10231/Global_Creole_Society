@@ -1,147 +1,75 @@
+"use client";
+
 import React, { useState } from "react";
 import { Heart, MessageCircle } from "lucide-react";
 import { FaShareFromSquare } from "react-icons/fa6";
+import CommentsModal from "./CommentsModal";
 
-const formatTimestamp = (value) => {
-  if (!value) return "";
-
-  try {
-    const d = new Date(value);
-
-    // ---- Time Format (8:12PM) ----
-    let hours = d.getHours();
-    let minutes = d.getMinutes();
-    let ampm = hours >= 12 ? "PM" : "AM";
-
-    hours = hours % 12 || 12; // 0 → 12
-    minutes = minutes.toString().padStart(2, "0");
-
-    const time = `${hours}:${minutes}${ampm}`;
-
-    // ---- Date Format (12 April) ----
-    const day = d.getDate();
-    const month = d.toLocaleString("en-US", { month: "long" }); // April
-
-    const date = `${day} ${month}`;
-
-    // Final output (you can return what you want)
-    return { time, date };
-  } catch {
-    return value;
-  }
-};
-
-const PostCard = ({ post = {}, onComment, onShare }) => {
-  // Backend may return different shapes: `user` or `author`, media as strings or objects.
-  const author = post.user || post.content || post.created_by || {};
-  const avatar = author.profile_image || author.profile_image || "/placeholder.svg";
+const PostCard = ({ post, onShare, onLike }) => {
+  const author = post.user || {};
+  const avatar = author.profile_image || "/placeholder.svg";
   const username = author.profile_name || author.name || author.email || "Unknown";
-  const timestamp =
-    post?.created_at || post?.timestamp || author?.timestamp || post?.date;
-  const { time, date } = formatTimestamp(timestamp) || {};
-  const initialLiked = !!post.isLiked || !!post.liked;
-  const initialLikes = Number(
-    post.likes || post.likes_count || post.reactions || 0
-  );
 
-  const [isLiked, setIsLiked] = useState(initialLiked);
-  const [likesCount, setLikesCount] = useState(initialLikes);
-
-  const handleLike = () => {
-    const newLikedState = !isLiked;
-    setIsLiked(newLikedState);
-    setLikesCount((prev) => (newLikedState ? prev + 1 : Math.max(0, prev - 1)));
-  };
-
-  // Use it
-
-  const media = Array.isArray(post.media)
-    ? post.media
-    : post.media
-    ? [post.media]
-    : post.attachments || [];
+  const [showCommentModal, setShowCommentModal] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl p-4 mb-4 shadow-sm transform transition-transform duration-700 ease-out hover:scale-102">
+    <div className="bg-white rounded-xl p-4 mb-4 shadow-sm hover:scale-102 transition-transform">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-3">
-          <img
-            src={avatar}
-            alt={username}
-            className="w-10 h-10 rounded-full object-cover"
-          />
+          <img src={avatar} alt={username} className="w-10 h-10 rounded-full object-cover" />
           <div>
             <h3 className="font-semibold text-gray-900">{username}</h3>
-            <p className="text-sm text-gray-500">
-              {/* {formatTimestamp(timestamp)} */}
-              {date} at {time}
-            </p>
+            <p className="text-sm text-gray-500">{new Date(post.created_at).toLocaleString()}</p>
           </div>
         </div>
-        <button
-          onClick={onShare}
-          className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
-        >
+        <button onClick={onShare} className="p-2 hover:bg-gray-100 rounded-full">
           <FaShareFromSquare className="w-4 h-4 text-gray-500" />
         </button>
       </div>
 
+      {/* Content */}
       <div className="mb-3">
-        <p className="text-gray-800 mb-3">
-          {post.content || post.text || post.body}
-        </p>
-
-        {/* Render multiple media (handle string or object media entries) */}
-        {media.map((file, index) => {
-          const src = file?.url || file?.file || file;
-          const type =
-            file?.type ||
-            (typeof src === "string" && src.match(/\.mp4|\.webm/)
-              ? "video"
-              : "image");
+        <p className="text-gray-800 mb-3">{post.content}</p>
+        {post.media?.map((file, index) => {
+          const src = file?.file || file?.url || file;
+          const type = file?.type || (src?.match(/\.mp4|\.webm/) ? "video" : "image");
           if (!src) return null;
           return type === "video" ? (
-            <video
-              key={index}
-              src={src}
-              controls
-              className="w-full max-h-96 rounded-lg"
-            />
+            <video key={index} src={src} controls className="w-full max-h-96 rounded-lg" />
           ) : (
-            <img
-              key={index}
-              src={src}
-              alt={`media-${index}`}
-              className="w-full max-h-96 object-cover rounded-lg"
-            />
+            <img key={index} src={src} className="w-full max-h-96 object-cover rounded-lg" />
           );
         })}
       </div>
 
+      {/* Actions */}
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
         <div className="flex items-center space-x-6">
           <button
-            onClick={handleLike}
-            className="cursor-pointer flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors"
+            onClick={() => onLike(post.id)}
+            className="flex items-center space-x-2 text-gray-500 hover:text-red-500"
           >
-            <Heart
-              className={`w-5 h-5 ${
-                isLiked ? "fill-red-500 text-red-500" : ""
-              }`}
-            />
-            <span className="text-sm">{likesCount} Likes</span>
+            <Heart className={`w-5 h-5 ${post.is_liked ? "fill-red-500 text-red-500" : ""}`} />
+            <span className="text-sm">{post.like_count} Likes</span>
           </button>
+
           <button
-            onClick={onComment}
-            className="cursor-pointer flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
+            onClick={() => setShowCommentModal(true)}
+            className="flex items-center space-x-2 text-gray-500 hover:text-blue-500"
           >
             <MessageCircle className="w-5 h-5" />
-            <span className="text-sm">
-              {post.comments || post.comments_count || 0} Comments
-            </span>
+            <span className="text-sm">{post.comment_count || 0} Comments</span>
           </button>
         </div>
       </div>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        isOpen={showCommentModal}
+        onClose={() => setShowCommentModal(false)}
+        postId={post.id}
+      />
     </div>
   );
 };

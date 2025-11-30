@@ -7,9 +7,9 @@ import CreatePostSection from "./CreatePostSection";
 import PostCard from "./PostCard";
 import CommentsModal from "./CommentsModal";
 import ShareModal from "./ShareModal";
-// import { createpost, getpost, getPost } from "../../API/api";
 import { toast } from "sonner";
-import { createpost, getpost, getposts, seethepost } from "../../API/api";
+import { createpost, getpost, seethepost, toggleLike } from "../../API/api";
+// import { createpost, getpost, seethepost, likePost } from "../../API/api";
 
 const mockStories = [
   { id: "add", type: "add", title: "Add your reels" },
@@ -20,11 +20,13 @@ const mockStories = [
 const SocialFeed = () => {
   const queryClient = useQueryClient();
 
+  // Fetch all posts
   const { data: posts, isLoading } = useQuery({
     queryKey: ["posts"],
-    queryFn: () => getpost({}).then((data) => data.results), // getpost now returns res.data
+    queryFn: () => getpost({}).then((d) => d.results),
   });
 
+  // Profile
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: () => seethepost(localStorage.getItem("userId")),
@@ -33,35 +35,17 @@ const SocialFeed = () => {
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
 
+  // Create Post Mutation
   const postMutation = useMutation(createpost, {
     onSuccess: async (data) => {
       try {
         const createdId = data?.id;
         if (createdId) {
-          // Fetch authoritative post from server and insert into cache
           const fresh = await getpost(createdId);
-          queryClient.setQueryData(["posts"], (oldData) => {
-            if (Array.isArray(oldData)) return [fresh, ...oldData];
-            if (oldData && Array.isArray(oldData.results))
-              return { ...oldData, results: [fresh, ...oldData.results] };
-            return [fresh];
-          });
-          // Also refresh any single-user/society post queries so other pages see the new post
-          try {
-            queryClient.invalidateQueries({
-              queryKey: ["getsingleuserpost"],
-              exact: false,
-            });
-          } catch (e) {
-            // fallback: invalidate by prefix
-            queryClient.invalidateQueries("getsingleuserpost");
-          }
-        } else {
-          queryClient.invalidateQueries(["posts"]);
+          queryClient.setQueryData(["posts"], (old) => [fresh, ...(old ?? [])]);
         }
       } catch (err) {
         console.error("Error fetching created post:", err);
-        queryClient.invalidateQueries(["posts"]);
       }
       toast.success("Post created successfully!");
     },
@@ -71,46 +55,66 @@ const SocialFeed = () => {
   });
 
   const handleCreatePost = (postData) => postMutation.mutate(postData);
-  const handleOpenShareModal = (postId) => setActiveSharePostId(postId);
-  const handleOpenCommentModal = (postId) => setActiveCommentPostId(postId);
-  const closeShareModal = () => setActiveSharePostId(null);
-  const closeCommentModal = () => setActiveCommentPostId(null);
+
+  // ----------------------------------------------------
+  // LIKE SYSTEM MUTATION
+  // ----------------------------------------------------
+  const likeMutation = useMutation({
+    mutationFn: toggleLike,
+    onSuccess: (data, postId) => {
+      queryClient.setQueryData(["posts"], (oldPosts) => {
+        if (!oldPosts) return oldPosts;
+
+        return oldPosts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                is_liked: !p.is_liked,
+                like_count: p.is_liked ? p.like_count - 1 : p.like_count + 1,
+              }
+            : p
+        );
+      });
+    },
+  });
+
+  const handleLike = (postId) => likeMutation.mutate(postId);
+
+  // ----------------------------------------------------
 
   if (isLoading) return <p>Loading posts...</p>;
 
   return (
     <div className="min-h-screen">
       <StoriesSection stories={mockStories} />
-<div>
-  <p>this is ju</p>
-</div>
+
       <CreatePostSection
         currentUser={JSON.parse(localStorage.getItem("profile"))?.user}
         onCreatePost={handleCreatePost}
         profile={profile}
       />
 
-      {/* ekahane get method diye data fetch korte hobe */}
-
       <div className="space-y-4">
         {posts?.map((post) => (
           <PostCard
             key={post.id}
             post={post}
-            onComment={() => handleOpenCommentModal(post.id)}
-            onShare={() => handleOpenShareModal(post.id)}
+            onLike={() => handleLike(post.id)}
+            onComment={() => setActiveCommentPostId(post.id)}
+            onShare={() => setActiveSharePostId(post.id)}
           />
         ))}
       </div>
 
       <ShareModal
         isOpen={!!activeSharePostId}
-        onClose={closeShareModal}
+        onClose={() => setActiveSharePostId(null)}
         postId={activeSharePostId}
       />
+
       <CommentsModal
         isOpen={!!activeCommentPostId}
-        onClose={closeCommentModal}
+        onClose={() => setActiveCommentPostId(null)}
         postId={activeCommentPostId}
       />
     </div>

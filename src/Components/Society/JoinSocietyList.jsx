@@ -1,19 +1,33 @@
 import Navbar from "../Navbar";
-import { FaPlus } from "react-icons/fa";
-import { getmySocieties, getOtherSocieties } from "../../API/api";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { getOtherSocieties, joinsociety } from "../../API/api";
+import { toast } from "sonner";
 
 const JoinSocietyList = () => {
-  const { data: otherSocieties } = useQuery({
+  const { data: otherSocieties, refetch } = useQuery({
     queryKey: ["othersocietylist"],
     queryFn: getOtherSocieties,
   });
+
   const navigate = useNavigate();
-  const handleJoin = (e, id) => {
+
+  const handleJoin = async (e, id) => {
     e.stopPropagation();
-    navigate(`/society/${id}`);
+    try {
+      const response = await joinsociety(id);
+      console.log("Join society response:", response);
+      toast.success("Successfully joined society!");
+
+      refetch();
+
+      navigate(`/society/${id}`);
+    } catch (err) {
+      console.error("Join society error:", err);
+      toast.error(err?.response?.data?.detail || "Failed to join society");
+    }
   };
+
   const formatRelativeTime = (dateString) => {
     if (!dateString) return "Unknown";
     const now = new Date();
@@ -29,8 +43,9 @@ const JoinSocietyList = () => {
     if (hr < 24) return `${hr} hours`;
     return `${day} days`;
   };
+
   return (
-    <div className=" ">
+    <div>
       <section className="py-7">
         <Navbar />
       </section>
@@ -46,14 +61,12 @@ const JoinSocietyList = () => {
           <h2 className="text-xl sm:text-2xl font-bold mb-2">Join Societies</h2>
         </div>
 
-        {/* Join Societies */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-10">
           {otherSocieties?.results?.map((society) => (
             <div
               key={society.id}
               onClick={() => navigate(`/society/${society.id}`)}
-              className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center
-                      text-center hover:scale-103 transition-transform cursor-pointer"
+              className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:scale-103 transition-transform cursor-pointer"
             >
               <img
                 src={

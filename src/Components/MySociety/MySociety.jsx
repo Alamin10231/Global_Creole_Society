@@ -45,7 +45,7 @@ const MySociety = () => {
     queryFn: () => getsingleuserpost(id),
     enabled: !!id,
   });
-  console.log("post data test", mypostdata);
+  
 
   // see the post
   const { data: seePostData } = useQuery({

@@ -1,146 +1,171 @@
-  import axios from "axios";
+import axios from "axios";
 
-  const API = axios.create({
-    baseURL: "https://mahamudh474.pythonanywhere.com/",
-  });
+const API = axios.create({
+  baseURL: "https://mahamudh474.pythonanywhere.com/",
+});
 
-  // Attach token for every request
-  API.interceptors.request.use((config) => {
-    const token = localStorage.getItem("accessToken");
+// Attach token for every request
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const signup = (formData: any) => {
+  try {
+    localStorage.removeItem("accessToken");
+  } catch (e) {}
+  return API.post("/api/accounts/register/", formData);
+};
+export const signin = (formData: any) => {
+  try {
+    localStorage.removeItem("accessToken");
+  } catch (e) {}
+
+  let payload: any = formData;
+  if (
+    !(formData instanceof FormData) &&
+    formData &&
+    formData.email &&
+    formData.password
+  ) {
+    const data = new FormData();
+    data.append("email", formData.email);
+    data.append("password", formData.password);
+    payload = data;
+  }
+
+  return API.post("/api/accounts/login/", payload).then((res) => {
+    const token =
+      res.data?.token ||
+      res.data?.access ||
+      res.data?.key ||
+      res.data?.data?.token;
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      try {
+        localStorage.setItem("accessToken", token);
+      } catch (e) {}
     }
-    return config;
+    return res;
   });
+};
 
-  export const signup = (formData: any) => {
-    try {
-      localStorage.removeItem("accessToken");
-    } catch (e) {}
-    return API.post("/api/accounts/register/", formData);
-  };
-  export const signin = (formData: any) => {
-    try {
-      localStorage.removeItem("accessToken");
-    } catch (e) {}
+export const getposts = (formData: any) =>
+  API.get("/api/social/posts/", { params: formData }).then((res) => res.data);
+export const changepassword = (formData: any) =>
+  API.patch("/api/accounts/change-password/", formData);
 
-    let payload: any = formData;
-    if (
-      !(formData instanceof FormData) &&
-      formData &&
-      formData.email &&
-      formData.password
-    ) {
-      const data = new FormData();
-      data.append("email", formData.email);
-      data.append("password", formData.password);
-      payload = data;
-    }
+export const profiletoggle = () => API.post("/api/accounts/profile-lock/");
 
-    return API.post("/api/accounts/login/", payload).then((res) => {
-      const token =
-        res.data?.token ||
-        res.data?.access ||
-        res.data?.key ||
-        res.data?.data?.token;
-      if (token) {
-        try {
-          localStorage.setItem("accessToken", token);
-        } catch (e) {}
-      }
-      return res;
-    });
-  };
+export const forgetpassword = (formData: any) =>
+  API.post("/api/accounts/send-otp/", formData);
 
-  export const getposts = (formData: any) =>
-    API.get("/api/social/posts/", { params: formData }).then((res) => res.data);
-  export const changepassword = (formData: any) =>
-    API.patch("/api/accounts/change-password/", formData);
+// POSTS
+export const getpost = (formData: any) =>
+  API.get("/api/social/posts/", { params: formData }).then((res) => res.data);
 
-  export const profiletoggle = () => API.post("/api/accounts/profile-lock/");
+export const createpost = (formData: any) =>
+  API.post("/api/social/posts/create/", formData).then((res) => res.data);
+//like post
+export const toggleLike = (postId: string | number) =>
+  API.post(`/api/social/posts/${postId}/like/`).then((res) => res.data);
+// comment post
+export const commentPost = (postId:any, content:any) =>
+  API.post(`/api/social/posts/${postId}/comments/`, { content }).then(
+    (res) => res.data
+  )
 
-  export const forgetpassword = (formData: any) =>
-    API.post("/api/accounts/send-otp/", formData);
+  // see this comment 
+export const seecomments = (postId:any) =>
+  API.get(`/api/social/posts/${postId}/comments/`).then(
+    (res) => res.data
+  ); 
+// Get single post by id
+export const getFriendRequests = async () => {
+  const res = await API.get("/api/friends/requests/"); // your backend URL here
+  return res.data;
+};
 
-  // POSTS
-  export const getpost = (formData: any) =>
-    API.get("/api/social/posts/", { params: formData }).then((res) => res.data);
+export const getAddFriends = async () => {
+  const res = await API.get("/api/friends/suggestions/"); // your backend URL here
+  return res.data;
+};
+export const requestFriend = (userId: string | number) =>
+  API.post(`/api/friends/request/${userId}/`).then((res) => res.data);
+export const suggessionfriend = async () => {
+  const res = await API.get("/api/social/friends/suggestions/");
+  return res.data;
+};
 
-  export const createpost = (formData: any) =>
-    API.post("/api/social/posts/create/", formData).then((res) => res.data);
+// notifications
+export const getNotifications = async () => {
+  return API.get("/api/social/notifications/").then((res) => res.data);
+};
+export const markNotificationAsRead = (id: string | number) => {
+  return API.post(`/api/social/notifications/mark-read/${id}/`).then(
+    (res) => res.data
+  );
+};
+// profile
+export const getprofile = () => {
+  return API.get(`/api/accounts/profile/`).then((res) => res.data);
+};
 
-  // Get single post by id
-  export const getFriendRequests = async () => {
-    const res = await API.get("/api/friends/requests/"); // your backend URL here
-    return res.data;
-  };
+export const friendlist = () => {
+  return API.get(`/api/social/friends/`).then((res) => res.data);
+};
 
-  export const getAddFriends = async () => {
-    const res = await API.get("/api/friends/suggestions/"); // your backend URL here
-    return res.data;
-  };
-  export const requestFriend = (userId: string | number) =>
-    API.post(`/api/friends/request/${userId}/`).then((res) => res.data);
-  export const suggessionfriend = async () => {
-    const res = await API.get("/api/social/friends/suggestions/");
-    return res.data;
-  };
+// social
+export const getOtherSocieties = () => {
+  return API.get(`/api/social/societies?exclude_my_societies=true`).then(
+    (res) => res.data
+  );
+};
+export const getmySocieties = () => {
+  return API.get(`/api/social/societies?my_societies=true`).then(
+    (res) => res.data
+  );
+};
 
-  // notifications
-  export const getNotifications = async () => {
-    return API.get("/api/social/notifications/").then((res) => res.data);
-  };
-  export const markNotificationAsRead = (id: string | number) => {
-    return API.post(`/api/social/notifications/mark-read/${id}/`).then(
-      (res) => res.data
-    );
-  };
-  // profile
-  export const getprofile = () => {
-    return API.get(`/api/accounts/profile/`).then((res) => res.data);
-  };
+// join society
 
-  export const friendlist = () => {
-    return API.get(`/api/social/friends/`).then((res) => res.data);
-  };
+export const createsociety = (body: any) => {
+  return API.post(`/api/social/societies/create/`, body).then(
+    (res) => res.data
+  );
+};
+// join society
+export const joinsociety = (id: string | number) => {
+  return API.post(`/api/social/societies/${id}/join/`).then((res) => res.data);
+};
 
-  // social
-  export const getOtherSocieties = () => {
-    return API.get(`/api/social/societies?exclude_my_societies=true`).then(
-      (res) => res.data
-    );
-  };
-  export const getmySocieties = () => {
-    return API.get(`/api/social/societies?my_societies=true`).then(
-      (res) => res.data
-    );
-  };
+// Export the configured API instance
+export const getsocietyData = (id: string | number) => {
+  return API.get(`/api/social/societies/${id}/`).then((res) => res.data);
+};
+// show memberships
+export const getMemberships = (id: string | number) => {
+  return API.get(`/api/social/societies/${id}/members/`).then(
+    (res) => res.data
+  );
+};
 
-  // Export the configured API instance
-  export const getsocietyData = (id: string | number) => {
-    return API.get(`/api/social/societies/${id}/`).then((res) => res.data);
-  };
-  // show memberships
-  export const getMemberships = (id: string | number) => {
-    return API.get(`/api/social/societies/${id}/members/`).then(
-      (res) => res.data
-    );
-  };
+//single user post
+export const getsingleuserpost = (societyId: string | number) => {
+  return API.get(`/api/social/posts/?society_id=${societyId}`).then(
+    (res) => res.data
+  );
+};
+// see the post
+export const seethepost = (societyId: string | number) =>
+  API.get(`/api/social/posts/?society_id=${societyId}`).then((res) => res.data);
 
-  //single user post
-  export const getsingleuserpost = (societyId:string | number) => {
-    return API.get(`/api/social/posts/?society_id=${societyId}`)
-      .then((res) => res.data);
-  };
-  // see the post
-  export const seethepost = (societyId: string | number) =>
-    API.get(`/api/social/posts/?society_id=${societyId}`).then(res => res.data);
+// --------------------------
+// Create a new post
+// --------------------------
+export const createPost = (postData: any) =>
+  API.post("/api/social/posts/", postData).then((res) => res.data);
 
-  // --------------------------
-  // Create a new post
-  // --------------------------
-  export const createPost = (postData: any) =>
-    API.post("/api/social/posts/", postData).then(res => res.data);
-
-
-  export default API;
+export default API;
