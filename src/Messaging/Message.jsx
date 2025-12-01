@@ -68,7 +68,7 @@ const Message = ({ message }) => {
         )}
 
         {/* TIME */}
-        <div className="mt-1 text-right">
+        <div className="mt-1 text-right ">
           <span
             className={`text-[10px] ${
               isOwn ? "text-white/70" : "text-gray-500"
@@ -80,7 +80,7 @@ const Message = ({ message }) => {
       </div>
 
       {/* RIGHT SIDE (Your avatar — OPTIONAL, remove if unwanted) */}
-      {isOwn && (
+      {/* {isOwn && (
         <div className="ml-2">
           <img
             src="/placeholder.svg"
@@ -88,7 +88,7 @@ const Message = ({ message }) => {
             className="w-8 h-8 rounded-full opacity-0" // hidden: keeps spacing correct
           />
         </div>
-      )}
+      )} */}
     </div>
   );
 };

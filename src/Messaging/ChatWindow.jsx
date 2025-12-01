@@ -73,35 +73,21 @@ function ChatWindow({ chat, messages }) {
   }, [chat]);
 
   // Send Message
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!socket) return;
+const handleSend = (e) => {
+  e.preventDefault();
+  if (!socket || !messageText.trim()) return;
 
-    if (!messageText.trim()) return;
+  socket.send(
+    JSON.stringify({
+      type: "chat_message",
+      content: messageText,
+    })
+  );
 
-    // IMPORTANT: backend expects "content"
-    socket.send(
-      JSON.stringify({
-        type: "chat_message",
-        content: messageText,
-      })
-    );
+  // remove optimistic update
+  setMessageText("");
+};
 
-    // Optimistic UI
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        content: messageText,
-        sender_name: "You",
-        sender_image: null,
-        isOwn: true,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
-
-    setMessageText("");
-  };
 
   const [messageText, setMessageText] = useState("");
 
