@@ -1,27 +1,36 @@
+"use client";
+
 import Navbar from "../Navbar";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { getOtherSocieties, joinsociety } from "../../API/api";
+import {
+  getsocietyjoinData,   // 🔥 UPDATED NAME
+  joinsociety,
+} from "../../API/api";
 import { toast } from "sonner";
 
 const JoinSocietyList = () => {
+
+  // Fetch societies user can join
   const { data: otherSocieties, refetch } = useQuery({
     queryKey: ["othersocietylist"],
-    queryFn: getOtherSocieties,
+    queryFn: getsocietyjoinData,   // 🔥 UPDATED NAME
   });
 
   const navigate = useNavigate();
 
-  const handleJoin = async (e, id) => {
+  // ⭐ JOIN society handler
+  const handleJoin = async (e, societyId) => {
     e.stopPropagation();
     try {
-      const response = await joinsociety(id);
+      const response = await joinsociety(societyId);
+
       console.log("Join society response:", response);
       toast.success("Successfully joined society!");
 
-      refetch();
+      await refetch();
 
-      navigate(`/society/${id}`);
+      navigate(`/society/${societyId}`);
     } catch (err) {
       console.error("Join society error:", err);
       toast.error(err?.response?.data?.detail || "Failed to join society");
@@ -51,12 +60,10 @@ const JoinSocietyList = () => {
       </section>
 
       <section className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-10">
-        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold">Society</h1>
         </div>
 
-        {/* Join Societies */}
         <div className="flex items-center justify-between mt-5">
           <h2 className="text-xl sm:text-2xl font-bold mb-2">Join Societies</h2>
         </div>

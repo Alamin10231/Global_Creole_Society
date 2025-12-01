@@ -1,6 +1,5 @@
 import React from 'react'
-
-const formatRelativeTime = (dateString) => {
+ const formatRelativeTime = (dateString) => {
   if (!dateString) return "Unknown";
   const now = new Date();
   const past = new Date(dateString);

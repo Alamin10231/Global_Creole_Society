@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 // import { signin } from "../../API/api";
@@ -16,8 +16,8 @@ const LoginPage = () => {
 
   const loginMutation = useMutation(signin, {
     onSuccess: (res) => {
-      const access = res.data.tokens.access;
-      const refresh = res.data.tokens.refresh;
+      const access = res.data.tokens?.access;
+      const refresh = res.data.tokens?.refresh;
 
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
@@ -73,6 +73,12 @@ const LoginPage = () => {
                 onChange={handleInputChange}
                 className="w-full border p-2 rounded"
               />
+              <Link
+                to="/settings/profile_settings/chnage_password"
+                className="text-sm text-blue-500 hover:underline"
+              >
+                Forgot Password?
+              </Link>
               <button
                 type="button"
                 onClick={togglePasswordVisibility}

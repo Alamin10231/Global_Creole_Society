@@ -1,166 +1,176 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import chatIcon from "../../assets/globalchat.png"
-import ChatHeader from "./ChatHeader"
-import ChatMessages from "./ChatMessages"
-import ChatInput from "./ChatInput"
+import { useState, useRef, useEffect } from "react";
+import chatIcon from "../../assets/globalchat.png";
+import ChatHeader from "./ChatHeader";
+import ChatMessages from "./ChatMessages";
+import ChatInput from "./ChatInput";
 
 const GlobalChatPopUp = () => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [isActive, setIsActive] = useState(false)
-    const [message, setMessage] = useState("")
-    const [messages, setMessages] = useState([
-        {
-            id: 1,
-            user: "Slim Aarons",
-            message: "Who was that photographer you shared with me recently?",
-            time: "3:00PM",
-            avatar: "/man-profile.jpg",
-        },
-        {
-            id: 2,
-            user: "Slim Aarons",
-            message: "Who was that photographer you shared with me recently?",
-            time: "3:00PM",
-            avatar: "/man-profile.jpg",
-        },
-        {
-            id: 3,
-            user: "You",
-            message: "That's him!",
-            time: "3:00PM",
-            isOwn: true,
-        },
-        {
-            id: 4,
-            user: "Slim Aarons",
-            message: "What was his vision statement?",
-            time: "3:00PM",
-            avatar: "/man-profile.jpg",
-        },
-        {
-            id: 5,
-            user: "You",
-            message: '"Attractive people doing attractive things in attractive places"',
-            time: "3:00PM",
-            isOwn: true,
-        },
-    ])
-    const messagesEndRef = useRef(null)
-    const popupRef = useRef(null) // Reference for the popup container
+  const [isOpen, setIsOpen] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    }
+  const popupRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
-    useEffect(() => {
-        scrollToBottom()
-    }, [messages])
+  // ⭐ Connect to WebSocket
+  useEffect(() => {
+    socketRef.current = new WebSocket("ws://10.10.13.99:8001/ws/global-chat/");
 
-    const handleSendMessage = (e) => {
-        e.preventDefault()
-        if (message.trim()) {
-            const newMessage = {
-                id: messages.length + 1,
-                user: "You",
-                message: message.trim(),
-                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                isOwn: true,
-            }
-            setMessages([...messages, newMessage])
-            setMessage("")
-        }
-    }
+    socketRef.current.onopen = () => {
+      console.log("Connected to WS server");
+    };
 
-    const handleInputFocus = () => {
-        if (!isActive) {
-            setIsActive(true)
-        }
-    }
+    socketRef.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
 
-    const handleClose = () => {
-        setIsOpen(false)
-        setIsActive(false)
-        setMessage("")
-    }
+      console.log("WS MESSAGE ->", data);
 
-    // Close the popup if the user clicks outside of the chat
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (popupRef.current && !popupRef.current.contains(event.target)) {
-                handleClose(); // Close chat if clicked outside
-            }
-        };
+      if (data.type === "connection_established") {
+        console.log("Handshake OK:", data.message);
+        return;
+      }
 
+      if (data.type === "chat_message") {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            user: data.sender?.profile_name || "Unknown",
+            avatar: data.sender?.profile_image || "/man-profile.jpg",
+            message: data.content,
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            isOwn: false,
+          },
+        ]);
+      }
+    };
 
-        document.addEventListener("mousedown", handleClickOutside)
+    socketRef.current.onclose = () => {
+      console.log("WS closed");
+    };
 
-        // Clean up event listener when the component is unmounted
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside)
-        }
-    }, [])
+    return () => socketRef.current.close();
+  }, []);
 
-    if (!isOpen) {
-        return (
-            <div className="fixed bottom-6 right-6 z-50">
-                <button onClick={() => setIsOpen(true)}>
-                    <img src={chatIcon} alt="" className="h-full w-full cursor-pointer" />
-                </button>
-            </div>
-        )
-    }
+  // ⭐ Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
+  // ⭐ Send message
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
 
+    const payload = {
+      type: "chat_message",
+      content: message.trim(),
+    };
+
+    // Send to WebSocket backend
+    socketRef.current.send(JSON.stringify(payload));
+
+    // Add to UI
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        user: "You",
+        avatar: "/man-profile.jpg",
+        message: message.trim(),
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        isOwn: true,
+      },
+    ]);
+
+    setMessage("");
+  };
+
+  const handleInputFocus = () => setIsActive(true);
+  const handleClose = () => {
+    setIsOpen(false);
+    setIsActive(false);
+    setMessage("");
+  };
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target)) {
+        handleClose();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  if (!isOpen) {
     return (
-        <div className="relative">
-            <div className="fixed bottom-6 right-6 z-50">
-                <button onClick={() => setIsOpen(!isOpen)}>
-                    <img src={chatIcon} alt="" className="h-full w-full cursor-pointer" />
-                </button>
+      <div className="fixed bottom-6 right-6 z-50">
+        <button onClick={() => setIsOpen(true)}>
+          <img src={chatIcon} alt="" className="h-full w-full cursor-pointer" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="fixed bottom-6 right-6 z-50">
+        <button onClick={() => setIsOpen(!isOpen)}>
+          <img src={chatIcon} alt="Chat Icon" className="h-full w-full" />
+        </button>
+      </div>
+
+      <div
+        ref={popupRef}
+        className="absolute bottom-30 right-10 w-[350px] h-[600px] xl:h-[700px] xl:w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ease-in-out"
+      >
+        {!isActive ? (
+          <div className="h-full bg-gradient-to-br from-[#1B3B66] via-[#0057FF] to-[#CAF4F7] flex flex-col justify-between p-6 text-white">
+            <div>
+              <ChatHeader onClose={handleClose} />
+              <div className="text-start mt-10">
+                <h2 className="text-3xl font-semibold mb-2 opacity-70">Join</h2>
+                <p className="text-2xl leading-relaxed opacity-90 font-semibold">
+                  Join the global chat to talk & connect in real time.
+                </p>
+              </div>
             </div>
 
-            <div
-                ref={popupRef} // Attach the ref to the popup container
-                className={`absolute bottom-30 right-10 w-[350px] h-[600px] xl:h-[700px] xl:w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? "opacity-100 transform scale-100" : "opacity-0 transform scale-90"
-                    }`}
-            >
-                {!isActive ? (
-                    // Initial popup state
-                    <div className=" h-full bg-gradient-to-br from-[#1B3B66] via-[#0057FF] to-[#CAF4F7] flex flex-col justify-between p-6 text-white">
-                        <div>
-                            <ChatHeader onClose={handleClose} />
-                            <div className="text-start mt-10">
-                                <h2 className="text-3xl font-semibold mb-2 opacity-70">Join</h2>
-                                <p className="text-2xl leading-relaxed opacity-90 font-semibold">
-                                    the global chat to talk, share, and connect with everyone in real time.
-                                </p>
-                            </div>
-                        </div>
-                        <ChatInput
-                            message={message}
-                            setMessage={setMessage}
-                            onFocus={handleInputFocus}
-                            onSend={handleSendMessage}
-                        />
-                    </div>
-                ) : (
-                    // Active chat state
-                    <div className="h-full flex flex-col transition-all duration-500 ease-in-out">
-                        <ChatHeader onClose={handleClose} />
-                        <ChatMessages messages={messages} messagesEndRef={messagesEndRef} />
-                        <ChatInput
-                            message={message}
-                            setMessage={setMessage}
-                            onFocus={handleInputFocus}
-                            onSend={handleSendMessage}
-                        />
-                    </div>
-                )}
-            </div>
-        </div>
-    )
-}
+            <ChatInput
+              message={message}
+              setMessage={setMessage}
+              onFocus={handleInputFocus}
+              onSend={handleSendMessage}
+            />
+          </div>
+        ) : (
+          <div className="h-full flex flex-col">
+            <ChatHeader onClose={handleClose} />
+            <ChatMessages messages={messages} messagesEndRef={messagesEndRef} />
 
-export default GlobalChatPopUp
+            <ChatInput
+              message={message}
+              setMessage={setMessage}
+              onFocus={handleInputFocus}
+              onSend={handleSendMessage}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GlobalChatPopUp;

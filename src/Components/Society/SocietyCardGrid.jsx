@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import CreateSocietyForm from "./CreateSocietyForm";
 import { useQuery } from "@tanstack/react-query";
-import { getmySocieties, getOtherSocieties } from "../../API/api";
+import { getmySocieties, getOtherSocieties, getsocietyjoinData } from "../../API/api";
 // import { getOtherSocieties, getMySocieties } from "../../API/api";
 
 // Convert ISO → "X hours ago"
@@ -39,7 +39,7 @@ const SocietyCardGrid = () => {
 
   const {data:otherSocieties, isLoading:Loadingothers} = useQuery({
     queryKey:["othersociety"],
-    queryFn:getOtherSocieties,
+    queryFn:getsocietyjoinData,
   })
 
   // LEAVE BUTTON FUNCTION
