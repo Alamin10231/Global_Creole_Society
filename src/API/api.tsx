@@ -105,11 +105,12 @@ export const suggessionfriend = async () => {
 export const getNotifications = async () => {
   return API.get("/api/social/notifications/").then((res) => res.data);
 };
-export const markNotificationAsRead = (id: string | number) => {
-  return API.post(`/api/social/notifications/mark-read/${id}/`).then(
+export const markNotificationAsRead = () => {
+  return API.post("/api/social/notifications/mark-read/").then(
     (res) => res.data
   );
 };
+
 // profile
 export const getprofile = () => {
   return API.get(`/api/accounts/profile/`).then((res) => res.data);
@@ -147,6 +148,19 @@ export const joinsociety = (id: string | number) => {
 export const getsocietyData = (id: string | number) => {
   return API.get(`/api/social/societies/${id}/`).then((res) => res.data);
 };
+
+//get join society
+export const getsocietyjoinData = () => {
+  return API.get("/api/social/societies", {
+    params: { available: true },
+  }).then((res) => res.data);
+};
+// leave society
+// export const leavesociety = (id: string | number) => {
+//   return API.post(`/api/social/societies/${id}/leave/`)
+//     .then((res) => res.data);
+// };
+
 // show memberships
 export const getMemberships = (id: string | number) => {
   return API.get(`/api/social/societies/${id}/members/`).then(
@@ -169,5 +183,16 @@ export const seethepost = (societyId: string | number) =>
 // --------------------------
 export const createPost = (postData: any) =>
   API.post("/api/social/posts/", postData).then((res) => res.data);
+
+// chatlist
+export const getchatlist = () => {
+  return API.get("/api/chat/conversations/").then((res) => res.data);
+};
+
+export const getMessages = (conversationId: any) => {
+  return API.get(`/api/chat/conversations/${conversationId}/messages/`).then(
+    (res) => res.data
+  );
+};
 
 export default API;

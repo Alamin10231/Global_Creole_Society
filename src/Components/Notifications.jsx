@@ -11,17 +11,20 @@ import {
   FaBell,
 } from "react-icons/fa";
 import Navbar from "./Navbar";
-import { useQuery } from "@tanstack/react-query";
-import { getNotifications, markNotificationAsRead, friendlist } from "../API/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  getNotifications,
+  markNotificationAsRead,
+  friendlist,
+} from "../API/api";
 
 function Notifications() {
-  // Local UI State
   const [localNotifications, setLocalNotifications] = useState([]);
-  const [friends, setFriends] = useState([]);   // ⭐ NEW — FRIEND LIST STATE
+  const [friends, setFriends] = useState([]);
   const [showMenu, setShowMenu] = useState(null);
 
-  // Get userId from localStorage
-  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const userId =
+    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
   // Fetch Notifications
   const { data, isLoading } = useQuery({
@@ -29,14 +32,14 @@ function Notifications() {
     queryFn: getNotifications,
   });
 
-  // Fetch Friend List ⭐ ADDED
+  // Fetch Friend List
   const { data: friendData } = useQuery({
     queryKey: ["friend-list", userId],
     queryFn: () => friendlist(userId),
-    enabled: !!userId,        // only fetch if userId exists
+    enabled: !!userId,
   });
 
-  // Sync fetched Notifications
+  // Sync fetched notifications into local state
   useEffect(() => {
     if (!data) return;
 
@@ -44,12 +47,27 @@ function Notifications() {
     setLocalNotifications(list);
   }, [data]);
 
-  // Sync Friend List ⭐ ADDED
+  // Sync friend list
   useEffect(() => {
     if (friendData) {
-      setFriends(friendData);     // your API returns array
+      setFriends(friendData);
     }
   }, [friendData]);
+
+  // ⭐ Mutation for marking ALL notifications as read
+  const markReadMutation = useMutation({
+    mutationFn: () => markNotificationAsRead(), // no ID needed
+    onSuccess: () => {
+      // Mark all as read in local UI
+      setLocalNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true }))
+      );
+      setShowMenu(null);
+    },
+    onError: (error) => {
+      console.error("Error marking notification as read:", error);
+    },
+  });
 
   const formatRelativeTime = (value) => {
     if (!value) return "";
@@ -62,20 +80,15 @@ function Notifications() {
     const hours = Math.floor(diff / 3600);
     const days = Math.floor(diff / 86400);
 
-    if (diff < 60) {
-      return "Just now";
-    } else if (minutes < 60) {
-      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-    } else if (hours < 24) {
-      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-    } else if (days < 7) {
-      return `${days} day${days > 1 ? "s" : ""} ago`;
-    } else {
-      return past.toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-      });
-    }
+    if (diff < 60) return "Just now";
+    if (minutes < 60) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (days < 7) return `${days} day${days > 1 ? "s" : ""} ago`;
+
+    return past.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+    });
   };
 
   const getNotificationIcon = (type) => {
@@ -91,25 +104,13 @@ function Notifications() {
     }
   };
 
-  const handleActionClick = (notificationId, type) => {
-    console.log("Clicked:", { notificationId, type });
-  };
-
   const handleMenuToggle = (id) => {
     setShowMenu(showMenu === id ? null : id);
   };
 
-  const handleMarkAsRead = (id) => {
-    markNotificationAsRead(id)
-      .then(() => {
-        setLocalNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-        );
-        setShowMenu(null);
-      })
-      .catch((error) => {
-        console.error("Error marking notification as read:", error);
-      });
+  // ⭐ Mark ALL notifications as read (no ID passed)
+  const handleMarkAsRead = () => {
+    markReadMutation.mutate();
   };
 
   const handleDelete = (id) => {
@@ -125,8 +126,7 @@ function Notifications() {
 
       <div className="min-h-[calc(100vh-100px)] px-4 sm:px-6 lg:px-8">
         <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8">
-
-          {/* FRIEND COUNT DISPLAY ⭐ OPTIONAL */}
+          {/* Friend Count */}
           <div className="mb-4 text-gray-700 text-sm">
             <b>Friends:</b> {friends?.length || 0}
           </div>
@@ -142,7 +142,7 @@ function Notifications() {
               <div
                 key={notification.id}
                 className={`bg-gray-50 rounded-lg shadow-sm p-4 sm:p-5 flex items-start gap-3 sm:gap-4 hover:shadow-md transition-shadow ${
-                  !notification.isRead ? "border-l-4 border-blue-500" : ""
+                  !notification.is_read ? "border-l-4 border-blue-500" : ""
                 }`}
               >
                 <div className="flex-1 cursor-pointer">
@@ -150,12 +150,10 @@ function Notifications() {
                     <img
                       className="w-10 h-10 rounded-full"
                       src={
-                        notification.sender?.profile_image ||
-                        "/placeholder.svg"
+                        notification.sender?.profile_image || "/placeholder.svg"
                       }
                       alt=""
                     />
-
                     <div>
                       <div className="text-sm sm:text-base text-gray-900">
                         <span className="font-bold">
@@ -173,7 +171,9 @@ function Notifications() {
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button className="p-2 hover:bg-gray-100 rounded-full">
-                    {getNotificationIcon(notification.sender?.notification_type)}
+                    {getNotificationIcon(
+                      notification.sender?.notification_type
+                    )}
                   </button>
 
                   <div className="relative">
@@ -186,13 +186,14 @@ function Notifications() {
 
                     {showMenu === notification.id && (
                       <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border py-2 z-20">
-
+                        {/* Mark all as read */}
                         <button
-                          onClick={() => handleMarkAsRead(notification.id)}
+                          onClick={handleMarkAsRead}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                          disabled={markReadMutation.isLoading}
                         >
                           <FaEye className="text-gray-500" />
-                          Mark as read
+                          Mark all as read
                         </button>
 
                         <button
@@ -202,7 +203,6 @@ function Notifications() {
                           <FaTrash className="text-red-500" />
                           Delete
                         </button>
-
                       </div>
                     )}
                   </div>

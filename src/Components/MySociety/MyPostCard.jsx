@@ -22,7 +22,7 @@ const formatTimestamp = (value) => {
   }
 };
 
-const MyPostCard = ({ post, onComment, onShare }) => {
+const MyPostCard = ({ post,  onShare }) => {
   const author = post.user || {};
   const avatar = author.profile_image || "/placeholder.svg";
   const username = author.profile_name || author.email || "Unknown";
