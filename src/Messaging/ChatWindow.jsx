@@ -111,7 +111,11 @@ function ChatWindow({ chat }) {
       </div>
     );
 
-  const user = chat.other_participant; // Correct user reference
+  const user = chat.other_participant;
+
+
+  console.log("chat",chat);
+  console.log("mahfux vai ",user); // Correct user reference
 
   return (
     <div className="flex-1 flex flex-col">
