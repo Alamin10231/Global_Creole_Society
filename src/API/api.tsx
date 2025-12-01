@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://mahamudh474.pythonanywhere.com/",
+  baseURL: "http://10.10.13.99:8001",
 });
 
 // Attach token for every request

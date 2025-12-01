@@ -41,8 +41,8 @@ const SocialFeed = () => {
       try {
         const createdId = data?.id;
         if (createdId) {
-          const fresh = await getpost(createdId);
-          queryClient.setQueryData(["posts"], (old) => [fresh, ...(old ?? [])]);
+          toast.success("Post created successfully!");
+    queryClient.invalidateQueries(["posts"]); 
         }
       } catch (err) {
         console.error("Error fetching created post:", err);

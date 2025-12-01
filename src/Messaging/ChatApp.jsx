@@ -8,36 +8,20 @@ import { getchatlist, getMessages } from "../API/api";
 function ChatApp() {
   const [selectedChat, setSelectedChat] = useState(null);
 
-  // ⬅️ Fetch all chat list
+  // Fetch chat list
   const { data: chats, isLoading: isChatLoading } = useQuery({
     queryKey: ["chatList"],
     queryFn: getchatlist,
   });
 
-  // ⬅️ Fetch messages when a chat is selected
-  // const { data: messages, isLoading: isMsgLoading } = useQuery({
-  //   queryKey: ["messages", selectedChat?.id],
-  //   queryFn: () => getMessages(selectedChat.id),
-  //   enabled: !!selectedChat, // run only when chat selected
-  // });
-  const {data:messages, isLoading:isMsgLoading} = useQuery({
+  // Fetch messages when chat is selected
+  const { data: messages, isLoading: isMsgLoading } = useQuery({
     queryKey: ["messages", selectedChat?.id],
-    queryFn:()=>getMessages(selectedChat.id)
-  })
+    queryFn: () => getMessages(selectedChat.id),
+    enabled: !!selectedChat?.id,
+  });
 
-  const [filter, setFilter] = useState("all"); 
-
-  const handleChatSelect = (chat) => {
-    setSelectedChat(chat);
-  };
-
-  const handleFilterChange = (filterType) => {
-    setFilter(filterType);
-  };
-
-  const handleSendMessage = (messageText) => {
-    console.log("Sending:", messageText);
-  };
+  const [filter, setFilter] = useState("all");
 
   if (isChatLoading) return <p className="p-10">Loading chats...</p>;
 
@@ -51,16 +35,15 @@ function ChatApp() {
         <ChatSidebar
           chats={chats ?? []}
           selectedChat={selectedChat}
-          onChatSelect={handleChatSelect}
+          onChatSelect={setSelectedChat}
           filter={filter}
-          onFilterChange={handleFilterChange}
+          onFilterChange={setFilter}
         />
 
         <ChatWindow
           chat={selectedChat}
-          messages={messages ?? []}
+          messages={messages?.results ?? []}  // ⭐ FIXED!
           isLoading={isMsgLoading}
-          onSendMessage={handleSendMessage}
         />
       </div>
     </div>

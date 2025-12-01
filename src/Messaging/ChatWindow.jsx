@@ -4,29 +4,22 @@ import { useState, useRef, useEffect } from "react";
 import { FaPhone, FaVideo, FaEllipsisV, FaPaperPlane } from "react-icons/fa";
 import Message from "./Message";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getMessages } from "../API/api";
 
-function ChatWindow({ chat }) {
+function ChatWindow({ chat, messages }) {
   const navigate = useNavigate();
   const currentUserId = localStorage.getItem("userId");
+  const token = localStorage.getItem("accessToken");
 
   const [socket, setSocket] = useState(null);
-  const [messageText, setMessageText] = useState("");
-  const [messages, setMessages] = useState([]);
+
+  // THIS replaces your old "messages"
+  const [chatMessages, setChatMessages] = useState([]);
   const messagesEndRef = useRef(null);
 
-  // Load messages from API
-  const { data: apiMessages = [] } = useQuery({
-    queryKey: ["messages", chat?.id],
-    queryFn: () => getMessages(chat.id),
-    enabled: !!chat?.id,
-  });
-
-  // Sync API → UI
+  // Load API messages when chat changes
   useEffect(() => {
-    if (apiMessages.length > 0) {
-      const formatted = apiMessages.map((msg) => ({
+    if (messages?.length) {
+      const formatted = messages.map((msg) => ({
         id: msg.id,
         content: msg.content,
         sender_name: msg.sender.profile_name,
@@ -34,68 +27,74 @@ function ChatWindow({ chat }) {
         isOwn: msg.sender.id == currentUserId,
         createdAt: msg.created_at,
       }));
-      setMessages(formatted);
-    }
-  }, [apiMessages]);
 
-  // Scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setChatMessages(formatted);
+    } else {
+      setChatMessages([]);
+    }
   }, [messages]);
 
-  // WebSocket connection
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  // WebSocket Connection
   useEffect(() => {
     if (!chat?.id) return;
-
     const ws = new WebSocket(
-      `wss://mahamudh474.pythonanywhere.com/ws/chat/${chat.id}/`
+      `ws://10.10.13.99:8001/ws/chat/${chat.id}/?token=${token}`
     );
 
     ws.onopen = () => console.log("WebSocket connected");
+    ws.onerror = (err) => console.log("WebSocket error:", err);
+    ws.onclose = () => console.log("WebSocket closed");
+
     setSocket(ws);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       if (data.type === "chat_message") {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            content: data.message,
-            sender_name: data.sender_name,
-            sender_image: data.sender_image,
-            isOwn: data.sender_id == currentUserId,
-            createdAt: new Date().toISOString(),
-          },
-        ]);
+        const newMessage = {
+          id: data.id || Date.now(),
+          content: data.content,
+          sender_name: data.sender_name,
+          sender_image: data.sender_image,
+          isOwn: data.sender_id == currentUserId,
+          createdAt: new Date().toISOString(),
+        };
+
+        setChatMessages((prev) => [...prev, newMessage]);
       }
     };
-
-    ws.onclose = () => console.log("WebSocket closed");
 
     return () => ws.close();
   }, [chat]);
 
-  // Send message
+  // Send Message
   const handleSend = (e) => {
     e.preventDefault();
-    if (!messageText.trim() || !socket) return;
+    if (!socket) return;
 
+    if (!messageText.trim()) return;
+
+    // IMPORTANT: backend expects "content"
     socket.send(
       JSON.stringify({
         type: "chat_message",
-        message: messageText,
+        content: messageText,
       })
     );
 
-    // Optimistic UI update
-    setMessages((prev) => [
+    // Optimistic UI
+    setChatMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
         content: messageText,
         sender_name: "You",
+        sender_image: null,
         isOwn: true,
         createdAt: new Date().toISOString(),
       },
@@ -103,6 +102,8 @@ function ChatWindow({ chat }) {
 
     setMessageText("");
   };
+
+  const [messageText, setMessageText] = useState("");
 
   if (!chat)
     return (
@@ -112,10 +113,6 @@ function ChatWindow({ chat }) {
     );
 
   const user = chat.other_participant;
-
-
-  console.log("chat",chat);
-  console.log("mahfux vai ",user); // Correct user reference
 
   return (
     <div className="flex-1 flex flex-col">
@@ -153,15 +150,15 @@ function ChatWindow({ chat }) {
       </div>
 
       {/* MESSAGES */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 ">
+        {chatMessages.map((msg) => (
           <Message key={msg.id} message={msg} />
         ))}
         <div ref={messagesEndRef} />
       </div>
 
       {/* INPUT */}
-      <form onSubmit={handleSend} className="p-4 border-t flex gap-2">
+      <form onSubmit={handleSend} className="p-4 border-t flex gap-2 ">
         <input
           type="text"
           placeholder="Type a message..."

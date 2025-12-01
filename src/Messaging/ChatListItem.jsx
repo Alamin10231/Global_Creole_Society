@@ -5,6 +5,7 @@ import formatRelativeTime from "../Hook/TimeFormat";
 function ChatListItem({ chat, isSelected, onClick }) {
   const user = chat.other_participant;
   const lastMessage = chat.last_message;
+  console.log(lastMessage)
 
   const avatar = user?.profile_image;
   const name = user?.profile_name;
@@ -32,6 +33,7 @@ function ChatListItem({ chat, isSelected, onClick }) {
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-gray-900 text-sm truncate">
             {name}
+            
           </h3>
           <span className="text-xs text-gray-500">{time}</span>
         </div>
