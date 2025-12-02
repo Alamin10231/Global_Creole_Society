@@ -101,10 +101,10 @@ const handleSend = (e) => {
   const user = chat.other_participant;
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col ">
       {/* HEADER */}
       <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ">
           <img
             src={user?.profile_image || "/placeholder.svg"}
             alt={user?.profile_name}
@@ -116,7 +116,7 @@ const handleSend = (e) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ">
           <button
             onClick={() => navigate("/chat/audiocall")}
             className="p-2 hover:bg-gray-100 rounded-full"
@@ -136,15 +136,15 @@ const handleSend = (e) => {
       </div>
 
       {/* MESSAGES */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 ">
+      <div className="flex flex-col overflow-y-auto p-4 space-y-4 justify-center ">
         {chatMessages.map((msg) => (
           <Message key={msg.id} message={msg} />
         ))}
-        <div ref={messagesEndRef} />
+        <div className="" ref={messagesEndRef} />
       </div>
 
       {/* INPUT */}
-      <form onSubmit={handleSend} className="p-4 border-t flex gap-2 ">
+      <form onSubmit={handleSend} className="p-4 border-t flex gap-2  ">
         <input
           type="text"
           placeholder="Type a message..."

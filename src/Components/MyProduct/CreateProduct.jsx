@@ -1,103 +1,104 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { FaImage, FaTimes } from "react-icons/fa"
-import Navbar from "../Navbar"
+import { useState } from "react";
+import { FaImage, FaTimes } from "react-icons/fa";
+import Navbar from "../Navbar";
+import { createproduct } from "../../API/api";
 
 function CreateProduct() {
   const [formData, setFormData] = useState({
     title: "",
     price: "",
     description: "",
-  })
-  const [mediaFiles, setMediaFiles] = useState([])
+    category: "", // ⭐ added
+  });
 
-  // Mock seller data - replace with actual user data from backend
-  const seller = {
-    name: "Ahmad Nur Fawaid",
-    avatar: "https://i.pravatar.cc/150?img=12",
-    shopName: "Sell in this shop",
-  }
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle input changes
   const handleInputChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-    console.log(`[v0] ${name} updated:`, value)
-  }
+    }));
+  };
 
-  // Handle media upload
   const handleMediaUpload = (e) => {
-    const files = Array.from(e.target.files)
+    const files = Array.from(e.target.files || []);
     const newMedia = files.map((file) => ({
       id: Date.now() + Math.random(),
       file,
       preview: URL.createObjectURL(file),
-    }))
-    setMediaFiles((prev) => [...prev, ...newMedia])
-    console.log("[v0] Media files uploaded:", files)
-  }
+    }));
+    setMediaFiles((prev) => [...prev, ...newMedia]);
+  };
 
-  // Remove media file
   const removeMedia = (id) => {
-    setMediaFiles((prev) => prev.filter((media) => media.id !== id))
-    console.log("[v0] Media removed:", id)
-  }
+    setMediaFiles((prev) => prev.filter((m) => m.id !== id));
+  };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    const productData = {
-      ...formData,
-      media: mediaFiles,
-      seller: seller.name,
-      createdAt: new Date().toISOString(),
+    if (
+      !formData.title.trim() ||
+      !formData.price.trim() ||
+      !formData.description.trim() ||
+      !formData.category
+    ) {
+      alert("All fields are required, including category!");
+      return;
     }
 
-    console.log("[v0] Product submitted:", productData)
+    try {
+      setIsSubmitting(true);
 
-    // Here you would send data to backend
-    // Example: await api.createProduct(productData);
+      const payload = new FormData();
 
-    alert("Product posted successfully!")
+      payload.append("name", formData.title);
+      payload.append("price", formData.price);
+      payload.append("description", formData.description);
+      payload.append("category", formData.category);
 
-    // Reset form
-    setFormData({ title: "", price: "", description: "" })
-    setMediaFiles([])
-  }
+      mediaFiles.forEach((media) => {
+        payload.append("images", media.file);
+      });
+
+      const response = await createproduct(payload);
+
+      alert("Product posted successfully!");
+
+      setFormData({
+        title: "",
+        price: "",
+        description: "",
+        category: "",
+      });
+      setMediaFiles([]);
+
+    } catch (error) {
+      console.error("Create product failed", error);
+      alert("Failed to post product");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div>
-      <div>
-        <Navbar></Navbar>
-      </div>
-
+      <Navbar />
 
       <div className="min-h-[calc(100vh-100px)] bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto">
           <div className="bg-white rounded-lg shadow-sm p-6">
-            {/* Header */}
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Item for sale</h1>
 
-            {/* Seller Info */}
-            <div className="flex items-center space-x-3 mb-6 pb-6 border-b border-gray-200">
-              <img
-                src={seller.avatar || "/placeholder.svg"}
-                alt={seller.name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-              <div>
-                <h3 className="font-semibold text-gray-900">{seller.name}</h3>
-                <p className="text-sm text-gray-500">{seller.shopName}</p>
-              </div>
-            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">
+              Item for sale
+            </h1>
 
-            <form onSubmit={handleSubmit}>
-              {/* Media Upload Section */}
+            <form onSubmit={handleSubmit} encType="multipart/form-data">
+              {/* Media Upload */}
               <div className="mb-6">
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                   <input
@@ -108,20 +109,23 @@ function CreateProduct() {
                     onChange={handleMediaUpload}
                     className="hidden"
                   />
-                  <label htmlFor="media-upload" className="cursor-pointer flex flex-col items-center">
+                  <label
+                    htmlFor="media-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
                     <FaImage className="text-4xl text-blue-500 mb-2" />
-                    <span className="text-gray-600 font-medium">Add Media</span>
+                    <span className="text-gray-600 font-medium">
+                      Add Media
+                    </span>
                   </label>
                 </div>
 
-                {/* Media Preview */}
                 {mediaFiles.length > 0 && (
                   <div className="grid grid-cols-3 gap-4 mt-4">
                     {mediaFiles.map((media) => (
                       <div key={media.id} className="relative group">
                         <img
-                          src={media.preview || "/placeholder.svg"}
-                          alt="Preview"
+                          src={media.preview}
                           className="w-full h-24 object-cover rounded-lg"
                         />
                         <button
@@ -137,64 +141,74 @@ function CreateProduct() {
                 )}
               </div>
 
-              {/* Required Section */}
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-1">Required</h2>
-                <p className="text-sm text-gray-500 mb-4">Be as descriptive as possible.</p>
-
-                {/* Title Input */}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    placeholder="Title"
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Price Input */}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    placeholder="Price"
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Description Textarea */}
-                <div>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Description"
-                    required
-                    rows="6"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
+              {/* Title */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  placeholder="Title"
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                />
               </div>
 
-              {/* Submit Button */}
+              {/* Price */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="Price"
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                />
+              </div>
+
+              {/* Category (Required by backend) */}
+              <div className="mb-4">
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Select Category</option>
+                  <option value="1">Category 1</option>
+                  <option value="2">Category 2</option>
+                </select>
+              </div>
+
+              {/* Description */}
+              <div className="mb-4">
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Description"
+                  rows="6"
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none"
+                />
+              </div>
+
               <button
                 type="submit"
-                className="cursor-pointer w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors"
+                disabled={isSubmitting}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg disabled:opacity-60"
               >
-                Post Product
+                {isSubmitting ? "Posting..." : "Post Product"}
               </button>
+
             </form>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default CreateProduct
+export default CreateProduct;

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useRef, useState } from "react";
 import Navbar from "../Components/Navbar";
 import ProfileHeader from "./ProfileHeader";
@@ -8,7 +10,8 @@ import PostCard from "../Components/Feed/PostCard";
 import EditAboutModal from "./EditAboutModal";
 import ShareModal from "../Components/Feed/ShareModal";
 import CommentsModal from "../Components/Feed/CommentsModal";
-import { getprofile } from "../API/api";
+import { getprofile, getsingleuserpost } from "../API/api";
+// import { getprofile, getUserPosts } from "../API/api";   // ⭐ Add getUserPosts
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -26,46 +29,39 @@ const Profile = () => {
   const closeShareModal = () => setActiveSharePostId(null);
   const closeCommentModal = () => setActiveCommentPostId(null);
 
-  const handleEditAboutPopup = () => {
+  const handleEditAboutPopup = () =>
     setIsModalOpen((prev) => !prev);
-  };
 
-  // Click outside Modal
+  // Close Modal when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        editAboutmodal.current &&
-        !editAboutmodal.current.contains(event.target)
-      ) {
+    const handleClickOutside = (e) => {
+      if (editAboutmodal.current && !editAboutmodal.current.contains(e.target)) {
         setIsModalOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🔥 Fetch Profile From API
+  // 🔥 Fetch Profile + Posts
   useEffect(() => {
-    const fetchProfile = async () => {
+    const loadData = async () => {
       try {
-        // Get user id from localStorage
+        const profileData = await getprofile();
+        setProfile(profileData);
 
-        // If no userId found → stop API call
+        // ⭐ Fetch posts for this user
+        const userPosts = await getsingleuserpost(profileData.id);
+        setPosts(userPosts.results || userPosts || []);
 
-        // Call your API
-        const data = await getprofile();
-        setProfile(data);
-      } catch (error) {
-        console.error("Error loading profile:", error);
+      } catch (err) {
+        console.error("Failed loading profile:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    loadData();
   }, []);
 
   if (loading) {
@@ -88,14 +84,12 @@ const Profile = () => {
   const profileData = {
     id: profile.id,
     name: profile.profile_name || "",
-    username: profile.profile_name, // only it was working
+    username: profile.profile_name,
     profileImage: profile.profile_image || "/placeholder.svg",
-    coverImage: "https://picsum.photos/800/200", // You can add a real API field later
-    industry: "",
-    location: profile.locations?.[0]?.city || "",
+    coverImage: "https://picsum.photos/800/200",
     followers: profile.friends_count,
     stats: {
-      posts: profile.post_count || 0,
+      posts: posts.length,
       friends: profile.friends_count || 0,
       likes: profile.likes_count || 0,
     },
@@ -105,17 +99,14 @@ const Profile = () => {
       workplace: profile.works?.[0]?.company || "",
     },
     description: profile.description,
-    values: [],
   };
 
   return (
     <div className="relative bg-[#F0F0F0] pb-20 my-7">
+
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div
-            ref={editAboutmodal}
-            className="bg-white rounded-lg p-6 shadow-xl"
-          >
+          <div ref={editAboutmodal} className="bg-white rounded-lg p-6 shadow-xl">
             <EditAboutModal />
             <div className="flex justify-end mt-4">
               <button
@@ -129,43 +120,50 @@ const Profile = () => {
         </div>
       )}
 
-      <nav>
-        <Navbar />
-      </nav>
+      <Navbar />
 
       <div className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-5">
+
         <section className="pb-5 rounded-lg transform transition-transform duration-700 ease-out hover:scale-101">
           <ProfileHeader data={profileData} />
-        
         </section>
 
         <section className="md:grid grid-cols-12 gap-5">
+
           <section className="col-span-4">
-            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-103">
+            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl hover:scale-103 transition-transform">
               <AboutMe handleEditAboutPopup={handleEditAboutPopup} data={profileData} />
             </div>
 
-            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-103">
+            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl hover:scale-103 transition-transform">
               <FriendsGrid data={profileData} />
             </div>
           </section>
 
           <section className="col-span-8">
-            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl transform transition-transform duration-700 ease-out hover:scale-102">
+            <div className="bg-white rounded-lg mb-5 p-8 shadow-xl hover:scale-102 transition-transform">
               <Description data={profileData} />
             </div>
 
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onComment={() => handleOpenCommentModal(post.id)}
-                  onShare={() => handleOpenShareModal(post.id)}
-                />
-              ))}
+            {/* ⭐ LIST OF POSTS */}
+            <div className="space-y-6">
+              {posts.length === 0 ? (
+                <p className="text-gray-500 text-center py-6">
+                  No posts yet.
+                </p>
+              ) : (
+                posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onShare={() => handleOpenShareModal(post.id)}
+                    onLike={() => console.log("Like post", post.id)}
+                  />
+                ))
+              )}
             </div>
           </section>
+
         </section>
       </div>
 

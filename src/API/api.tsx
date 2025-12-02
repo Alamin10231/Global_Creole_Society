@@ -194,5 +194,14 @@ export const getMessages = (conversationId: any) => {
     (res) => res.data
   );
 };
+// shop product list
+export const getproductlist = () => {
+  return API.get("/api/shop/products").then((res) => res.data);
+};
+
+// create product
+export const createproduct = (payload: any) => {
+  return API.post("/api/shop/products/", payload).then((res) => res.data);
+};
 
 export default API;
