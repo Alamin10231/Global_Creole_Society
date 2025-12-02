@@ -72,7 +72,7 @@ function ChatSidebar({ selectedChat, onChatSelect, filter, onFilterChange }) {
           filteredChats.map((chat) => (
             <ChatListItem
               key={chat.id}
-              chat={chat}                      // ✔ FIXED
+              chat={chat}                   
               isSelected={selectedChat?.id === chat.id}
               onClick={() => onChatSelect(chat)}
             />

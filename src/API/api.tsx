@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://mahamudh474.pythonanywhere.com/",
+  baseURL: "http://10.10.13.99:8001",
 });
 
 // Attach token for every request
@@ -193,6 +193,15 @@ export const getMessages = (conversationId: any) => {
   return API.get(`/api/chat/conversations/${conversationId}/messages/`).then(
     (res) => res.data
   );
+};
+// shop product list
+export const getproductlist = () => {
+  return API.get("/api/shop/products").then((res) => res.data);
+};
+
+// create product
+export const createproduct = (payload: any) => {
+  return API.post("/api/shop/products/", payload).then((res) => res.data);
 };
 
 export default API;
