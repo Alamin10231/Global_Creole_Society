@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { commentPost, seecomments } from "../../API/api";
 
 const CommentsModal = ({ isOpen, onClose, postId }) => {
@@ -10,47 +11,25 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const popupRef = useRef(null);
+  const queryClient = useQueryClient();
 
-  // Reset when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setCommentInput("");
-      // optional: clear comments so it doesn't flash old ones when reopened
-      setComments([]);
-    }
-  }, [isOpen]);
-
-  // Fetch comments when modal opens or postId changes
+  // Fetch comments when modal opens
   useEffect(() => {
     if (!isOpen || !postId) return;
-
-    let isCancelled = false;
 
     const fetchComments = async () => {
       try {
         setIsFetching(true);
-        setComments([]); // clear old comments for previous post
-
         const data = await seecomments(postId);
-        if (!isCancelled) {
-          setComments(data?.results || data || []);
-        }
+        setComments(data?.results || data || []);
       } catch (err) {
-        if (!isCancelled) {
-          console.error("Failed to fetch comments:", err);
-        }
+        console.error("Failed to fetch comments:", err);
       } finally {
-        if (!isCancelled) {
-          setIsFetching(false);
-        }
+        setIsFetching(false);
       }
     };
 
     fetchComments();
-
-    return () => {
-      isCancelled = true;
-    };
   }, [isOpen, postId]);
 
   // Close modal on outside click
@@ -67,7 +46,7 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose]);
 
-  // Post a new comment
+  // Post a comment
   const handlePostComment = async () => {
     if (!commentInput.trim() || isPosting) return;
 
@@ -75,13 +54,45 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
       setIsPosting(true);
 
       await commentPost(postId, commentInput);
-
-      // Clear input
       setCommentInput("");
 
-      // Re-fetch comments so you see your new one along with all previous
+      // Refresh comments
       const data = await seecomments(postId);
       setComments(data?.results || data || []);
+
+      // Update posts cache comment count
+      try {
+        queryClient.setQueryData(["posts"], (oldData) => {
+          if (!oldData) return oldData;
+
+          // Array shape
+          if (Array.isArray(oldData)) {
+            return oldData.map((p) =>
+              p.id === postId
+                ? { ...p, comment_count: (p.comment_count || 0) + 1 }
+                : p
+            );
+          }
+
+          // Paginated shape
+          if (oldData?.results) {
+            return {
+              ...oldData,
+              results: oldData.results.map((p) =>
+                p.id === postId
+                  ? { ...p, comment_count: (p.comment_count || 0) + 1 }
+                  : p
+              ),
+            };
+          }
+
+          return oldData;
+        });
+
+        queryClient.invalidateQueries("getsingleuserpost");
+      } catch (e) {
+        console.error("Failed to update posts cache:", e);
+      }
     } catch (err) {
       console.error("Failed to post comment:", err);
     } finally {
@@ -89,7 +100,7 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
     }
   };
 
-  // Post comment on Enter key (Shift+Enter for new line)
+  // Enter = post comment
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -100,18 +111,15 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed  inset-0 flex items-center justify-center bg-black/50 z-[9999]">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]">
       <div
         ref={popupRef}
-        className="bg-white rounded-xl w-[90%] max-w-lg max-h-[90vh] overflow-y-auto shadow-lg p-4"
+        className="bg-white rounded-xl w-[90%] sm:w-3/5 h-[80vh] sm:h-[60vh] overflow-y-auto shadow-lg p-4"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 pb-2 mb-4">
+        <div className="flex items-center justify-between border-b pb-2 mb-4">
           <h2 className="text-xl font-bold">Comments</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full"
-          >
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
             <X className="w-6 h-6 text-gray-500" />
           </button>
         </div>
@@ -148,15 +156,16 @@ const CommentsModal = ({ isOpen, onClose, postId }) => {
         </div>
 
         {/* Comment Input */}
-        <div className="mt-4 border-t border-gray-200 pt-3">
+        <div className="mt-4 border-t pt-3">
           <textarea
             value={commentInput}
             onChange={(e) => setCommentInput(e.target.value)}
             placeholder="Write a comment..."
             onKeyDown={handleKeyPress}
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             rows={3}
           />
+
           <div className="flex justify-end mt-2">
             <button
               onClick={handlePostComment}

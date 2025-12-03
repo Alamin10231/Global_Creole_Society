@@ -1,90 +1,97 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { X, ChevronRight } from "lucide-react"
+import { useState, useEffect, useRef } from "react";
+import { X, ChevronRight } from "lucide-react";
+import { feedsharepost, feedbulsharepost } from "../../API/api"; // adjust path
 
 const ShareModal = ({ isOpen, onClose, postData }) => {
-  const [shareMessage, setShareMessage] = useState("")
-  const [selectedUsers, setSelectedUsers] = useState([])
-  const [selectedSocieties, setSelectedSocieties] = useState([])
+  const [shareMessage, setShareMessage] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedSocieties, setSelectedSocieties] = useState([]);
 
-  // Create a ref for the modal popup
-  const popupRef = useRef(null)
+  const popupRef = useRef(null);
 
-  // Mock data for users and societies - replace with API calls
+  // Mock data for users and societies
   const mockUsers = [
     { id: 1, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
     { id: 2, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
-    { id: 3, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
-    { id: 4, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
-    { id: 5, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
-    { id: 6, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
-  ]
+  ];
 
   const mockSocieties = [
-    { id: 1, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: true },
-    { id: 2, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
-    { id: 3, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
-    { id: 4, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
-    { id: 5, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
-    { id: 6, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
-  ]
+    { id: 1, name: "Society A", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: true },
+    { id: 2, name: "Society B", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
+  ];
 
   const handleUserSelect = (userId) => {
-    setSelectedUsers((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]))
-  }
+    setSelectedUsers((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
 
   const handleSocietySelect = (societyId) => {
     setSelectedSocieties((prev) =>
-      prev.includes(societyId) ? prev.filter((id) => id !== societyId) : [...prev, societyId],
-    )
-  }
+      prev.includes(societyId) ? prev.filter((id) => id !== societyId) : [...prev, societyId]
+    );
+  };
 
-  const handleShareNow = () => {
-    console.log("[v0] Share now clicked:", {
-      postData,
-      message: shareMessage,
-      selectedUsers,
-      selectedSocieties,
-    })
-    onClose()
-  }
+  // Share single post (Inbox/Individual)
+  const handleShareNow = async () => {
+    if (!postData?.id) return;
 
-  const handleShare = () => {
-    console.log("[v0] Share clicked:", {
-      postData,
-      message: shareMessage,
-      selectedUsers,
-      selectedSocieties,
-    })
-    onClose()
-  }
+    try {
+      const payload = {
+        post_id: postData.id,
+        share_caption: shareMessage,
+        society_id: selectedSocieties.length > 0 ? selectedSocieties[0] : null, // first selected society
+      };
 
-  // Close the modal when clicking outside
+      const response = await feedsharepost(payload);
+      console.log("Single Share Successful:", response);
+      onClose();
+    } catch (error) {
+      console.error("Single Share Error:", error);
+    }
+  };
+
+  // Share bulk (Group/Society)
+  const handleShare = async () => {
+    if (!postData?.id) return;
+
+    try {
+      const payload = {
+        post_id: postData.id,
+        share_caption: shareMessage,
+        society_ids: selectedSocieties.length > 0 ? selectedSocieties : [], // send array for bulk
+        user_ids: selectedUsers.length > 0 ? selectedUsers : [], // send array of user IDs
+      };
+
+      const response = await feedbulsharepost(payload);
+      console.log("Bulk Share Successful:", response);
+      onClose();
+    } catch (error) {
+      console.error("Bulk Share Error:", error);
+    }
+  };
+
+  // Close modal on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
-        onClose(); // Close the modal if clicked outside
+        onClose();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside); // Clean up the event listener
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/15 flex items-center justify-center z-50 transition-opacity duration-300">
       <div
-        ref={popupRef}  // Assign ref to the modal container
-        className={`bg-white rounded-xl w-[50%] max-h-[90vh] overflow-hidden transform transition-transform duration-500 ease-out min-w-[420px]
-          
-          ${isOpen ? "translate-y-0" : "translate-y-full"}`}
-
+        ref={popupRef}
+        className="bg-white rounded-xl w-[50%] max-h-[90vh] overflow-hidden transform transition-transform duration-500 ease-out min-w-[420px]"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -95,24 +102,25 @@ const ShareModal = ({ isOpen, onClose, postData }) => {
         </div>
 
         <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
-
-          {/* User Profile Section */}
+          {/* Caption input */}
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center space-x-3 mb-3">
-              <img src="https://media.istockphoto.com/id/492529287/photo/portrait-of-happy-laughing-man.jpg?s=612x612&w=0&k=20&c=0xQcd69Bf-mWoJYgjxBSPg7FHS57nOfYpZaZlYDVKRE=" alt="Ahmad Nur Fawaid" className="w-10 h-10 rounded-full object-cover" />
-              <span className="font-bold text-gray-900">Ahmad Nur Fawaid</span>
+              <img
+                src="https://media.istockphoto.com/id/492529287/photo/portrait-of-happy-laughing-man.jpg?s=612x612&w=0&k=20&c=0xQcd69Bf-mWoJYgjxBSPg7FHS57nOfYpZaZlYDVKRE="
+                alt="User"
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              <span className="font-bold text-gray-900">Your Name</span>
             </div>
 
-            {/* Message Input */}
             <textarea
               value={shareMessage}
               onChange={(e) => setShareMessage(e.target.value)}
               placeholder="Say something about this (optional)"
               className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows="4"
+              rows={4}
             />
 
-            {/* Share Now Button */}
             <div className="flex justify-end mt-3">
               <button
                 onClick={handleShareNow}
@@ -123,7 +131,7 @@ const ShareModal = ({ isOpen, onClose, postData }) => {
             </div>
           </div>
 
-          {/* Send in Message Section */}
+          {/* Send in Message */}
           <div className="px-4 py-4">
             <h3 className="text-sm font-medium text-gray-900 mb-3">Send in Message</h3>
             <div className="flex items-center space-x-3 overflow-x-auto pb-2 gap-5">
@@ -131,24 +139,19 @@ const ShareModal = ({ isOpen, onClose, postData }) => {
                 <div key={user.id} className="flex-shrink-0 text-center">
                   <button
                     onClick={() => handleUserSelect(user.id)}
-                    className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${selectedUsers.includes(user.id) ? "border-blue-500" : "border-gray-200 hover:border-gray-300"}`}
+                    className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${
+                      selectedUsers.includes(user.id) ? "border-blue-500" : "border-gray-200 hover:border-gray-300"
+                    }`}
                   >
-                    <img
-                      src={user.avatar || "/placeholder.svg"}
-                      alt={user.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                   </button>
                   <span className="text-xs text-gray-600 mt-1 block">{user.name}</span>
                 </div>
               ))}
-              <button className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              </button>
             </div>
           </div>
 
-          {/* Send in Society Section */}
+          {/* Send in Society */}
           <div className="px-4 py-4">
             <h3 className="text-sm font-medium text-gray-900 mb-3">Send in Society</h3>
             <div className="flex items-center space-x-3 overflow-x-auto pb-2 gap-5">
@@ -156,36 +159,20 @@ const ShareModal = ({ isOpen, onClose, postData }) => {
                 <div key={society.id} className="flex-shrink-0 text-center">
                   <button
                     onClick={() => handleSocietySelect(society.id)}
-                    className={`relative w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${selectedSocieties.includes(society.id) || society.isSelected ? "border-blue-500" : "border-gray-200 hover:border-gray-300"}`}
+                    className={`relative w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${
+                      selectedSocieties.includes(society.id) || society.isSelected ? "border-blue-500" : "border-gray-200 hover:border-gray-300"
+                    }`}
                   >
-                    <img
-                      src={society.avatar || "/placeholder.svg"}
-                      alt={society.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {(selectedSocieties.includes(society.id) || society.isSelected) && (
-                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    )}
+                    <img src={society.avatar} alt={society.name} className="w-full h-full object-cover" />
                   </button>
                   <span className="text-xs text-gray-600 mt-1 block">{society.name}</span>
                 </div>
               ))}
-              <button className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Bottom Share Button */}
+        {/* Bottom Bulk Share */}
         <div className="p-4 border-t border-gray-200 flex justify-end">
           <button
             onClick={handleShare}
@@ -195,15 +182,8 @@ const ShareModal = ({ isOpen, onClose, postData }) => {
           </button>
         </div>
       </div>
-
-
-      {/* All Friend Popup */}
-      {/* <section>
-
-      </section> */}
-
     </div>
-  )
-}
+  );
+};
 
-export default ShareModal
+export default ShareModal;

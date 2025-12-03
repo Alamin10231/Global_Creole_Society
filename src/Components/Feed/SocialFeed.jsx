@@ -31,7 +31,6 @@ const SocialFeed = () => {
     queryKey: ["profile"],
     queryFn: () => seethepost(localStorage.getItem("userId")),
   });
-
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
 
