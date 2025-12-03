@@ -5,9 +5,13 @@ import Navbar from "../Navbar";
 import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import CreateSocietyForm from "./CreateSocietyForm";
-import { useQuery } from "@tanstack/react-query";
-import { getmySocieties, getOtherSocieties, getsocietyjoinData } from "../../API/api";
-// import { getOtherSocieties, getMySocieties } from "../../API/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getmySocieties,
+  getsocietyjoinData,
+  removesociety,
+  joinsociety,
+} from "../../API/api";
 
 // Convert ISO → "X hours ago"
 const formatRelativeTime = (dateString) => {
@@ -29,6 +33,7 @@ const formatRelativeTime = (dateString) => {
 const SocietyCardGrid = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch "Your Societies"
   const { data: mySocieties, isLoading: loadingMy } = useQuery({
@@ -36,22 +41,54 @@ const SocietyCardGrid = () => {
     queryFn: getmySocieties,
   });
 
+  // Fetch "Other Societies"
+  const { data: otherSocieties, isLoading: loadingOthers } = useQuery({
+    queryKey: ["othersociety"],
+    queryFn: getsocietyjoinData,
+  });
 
-  const {data:otherSocieties, isLoading:Loadingothers} = useQuery({
-    queryKey:["othersociety"],
-    queryFn:getsocietyjoinData,
-  })
+  // Leave society mutation
+  const leaveSocietyMutation = useMutation({
+    mutationFn: (id) => removesociety(id),
+    onSuccess: () => {
+      alert("You left the society!");
+      queryClient.invalidateQueries(["my_societies"]);
+      queryClient.invalidateQueries(["othersociety"]);
+    },
+    onError: () => {
+      alert("Failed to leave society!");
+    },
+  });
 
-  // LEAVE BUTTON FUNCTION
+  // Join society mutation
+  const joinSocietyMutation = useMutation({
+    mutationFn: (id) => joinsociety(id),
+    onSuccess: () => {
+      alert("You joined the society!");
+      queryClient.invalidateQueries(["my_societies"]);
+      queryClient.invalidateQueries(["othersociety"]);
+    },
+    onError: () => {
+      alert("Failed to join society!");
+    },
+  });
+
+  // Handle leave button
   const handleLeave = (e, id) => {
-    e.stopPropagation(); // Prevent card click navigation
-    console.log("Leaving society:", id);
+    e.stopPropagation();
+    leaveSocietyMutation.mutate(id);
   };
 
-  // VIEW BUTTON FUNCTION
+  // Handle view button
   const handleView = (e, id) => {
     e.stopPropagation();
     navigate(`/society/${id}`);
+  };
+
+  // Handle join button
+  const handleJoin = (e, id) => {
+    e.stopPropagation();
+    joinSocietyMutation.mutate(id);
   };
 
   return (
@@ -61,7 +98,6 @@ const SocietyCardGrid = () => {
       </section>
 
       <section className="2xl:px-44 xl:px-36 lg:px-28 md:px-20 sm:px-14 px-8 mt-2">
-        
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold">Society</h1>
@@ -84,18 +120,15 @@ const SocietyCardGrid = () => {
           <p
             onClick={() => navigate("/society/my_society_list")}
             className="text-[#3B82F6] font-semibold cursor-pointer"
-            data={mySocieties}
           >
-            See All 
-
-            
+            See All
           </p>
         </div>
 
         {loadingMy && <p>Loading your societies...</p>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {mySocieties?.results?.slice(0,4).map((society) => (
+          {mySocieties?.results?.slice(0, 4).map((society) => (
             <div
               key={society.id}
               onClick={() => navigate(`/society/${society.id}`)}
@@ -112,9 +145,7 @@ const SocietyCardGrid = () => {
                 className="w-24 h-24 mb-2 object-cover rounded-full"
               />
 
-              <h3 className="text-lg sm:text-xl font-semibold">
-                {society.name}
-              </h3>
+              <h3 className="text-lg sm:text-xl font-semibold">{society.name}</h3>
 
               <p className="text-gray-600 text-sm sm:text-base">
                 Last Active {formatRelativeTime(society.updated_at)} ago
@@ -124,7 +155,8 @@ const SocietyCardGrid = () => {
               <div className="flex justify-between gap-2 mt-3">
                 <button
                   onClick={(e) => handleLeave(e, society.id)}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm"
+                  disabled={leaveSocietyMutation.isLoading}
+                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm disabled:opacity-50"
                 >
                   Leave
                 </button>
@@ -151,15 +183,13 @@ const SocietyCardGrid = () => {
           </p>
         </div>
 
-        {Loadingothers && <p>Loading societies to join...</p>}
+        {loadingOthers && <p>Loading societies to join...</p>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {otherSocieties?.results?.slice(0,4).map((society) => (
+          {otherSocieties?.results?.slice(0, 4).map((society) => (
             <div
               key={society.id}
-              onClick={() => navigate(`/society/${society.id}`)}
-              className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center
-                      text-center hover:scale-103 transition-transform cursor-pointer"
+              className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:scale-103 transition-transform cursor-pointer"
             >
               <img
                 src={
@@ -178,7 +208,11 @@ const SocietyCardGrid = () => {
                 Last Active {formatRelativeTime(society.updated_at)} ago
               </p>
 
-              <button className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
+              <button
+                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm w-full"
+                disabled={joinSocietyMutation.isLoading}
+                onClick={(e) => handleJoin(e, society.id)}
+              >
                 Join
               </button>
             </div>

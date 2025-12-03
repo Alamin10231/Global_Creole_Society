@@ -1,9 +1,11 @@
+"use client";
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Video, ImageIcon } from "lucide-react";
 
-const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
+const CreatePostSection = ({ currentUser, onCreatePost, profile }) => {
   const [postText, setPostText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const navigate = useNavigate();
@@ -12,8 +14,6 @@ const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
     setSelectedFiles(Array.from(e.target.files));
   };
 
-  const avatar = currentUser?.profile_image || "/placeholder.svg";
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!postText.trim() && selectedFiles.length === 0) return;
@@ -21,9 +21,10 @@ const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
     const formData = new FormData();
     formData.append("content", postText);
     formData.append("privacy", "public");
+
     selectedFiles.forEach((file) => formData.append("media", file));
 
-    onCreatePost(formData);
+    onCreatePost(formData, selectedFiles); // pass files along
     setPostText("");
     setSelectedFiles([]);
     toast.success("Post submitted");
@@ -38,7 +39,7 @@ const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
             className="w-10 h-10 rounded-full object-cover"
             alt="avatar"
           />
-          
+
           <textarea
             value={postText}
             onChange={(e) => setPostText(e.target.value)}
@@ -47,6 +48,20 @@ const CreatePostSection = ({ currentUser, onCreatePost ,profile}) => {
             placeholder="Write your story today..."
           />
         </div>
+
+        {/* Preview uploaded images */}
+        {selectedFiles.length > 0 && (
+          <div className="flex gap-2 mt-3 overflow-x-auto">
+            {selectedFiles.map((file, idx) => (
+              <img
+                key={idx}
+                src={URL.createObjectURL(file)}
+                alt={`preview-${idx}`}
+                className="w-20 h-20 object-cover rounded-lg"
+              />
+            ))}
+          </div>
+        )}
 
         <div className="flex justify-between items-center mt-3">
           <div className="flex space-x-2">
