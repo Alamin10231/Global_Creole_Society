@@ -1,13 +1,27 @@
 import React from "react";
 import { FaPencilAlt } from "react-icons/fa";
 import SocietyImgUpload from "./SocietyImgUpload";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { formatTimestamp } from "../../Hook/TimeFormat";
+import { useQuery } from "@tanstack/react-query";
+import { getpendingsocietyData } from "../../API/api";
 
-const GlobalCreoleSocietyCard = ({ societyData, id }) => {
+const GlobalCreoleSocietyCard = ({ societyData }) => {
   const navigate = useNavigate();
 
-  console.log("societyData in card:", societyData);
+  const { id } = useParams();
+
+  console.log("id from URL:", id);
+
+  const { data: showmembers } = useQuery({
+    queryKey: ["societymembers", id],
+    queryFn: () => getpendingsocietyData(id),
+    enabled: !!id,
+  });
+
+  console.log("showmembers:", showmembers);
+
+  console.log("showmembers:", showmembers);
   return (
     <div className=" rounded-xl mx-auto flex flex-col items-center text-center">
       <div className=" relative bg-white w-full p rounded-xl p-4 mt-20 lg:mt-36 pt-15">
@@ -65,7 +79,7 @@ const GlobalCreoleSocietyCard = ({ societyData, id }) => {
           className="mb-4 bg-white rounded-lg p-2 px-4 flex justify-between cursor-pointer transform transition-transform duration-700 ease-in-out hover:scale-101"
         >
           <p className="text-gray-600 font-semibold">Pending Posts</p>
-          <p className="text-lg font-bold">12</p>
+          <p className="text-lg font-bold">{showmembers?.count}</p>
         </div>
 
         <div
