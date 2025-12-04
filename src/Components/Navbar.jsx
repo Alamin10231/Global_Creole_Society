@@ -161,11 +161,15 @@ const Navbar = () => {
                     <IoMdSettings size={30} color="#3B82F6" />
                     <p className="text-lg ">Settting & Support</p>
                   </div>
-                  <div>
-                    <Link to="/signin">
-                      <button>Log out</button>{" "}
-                    </Link>{" "}
-                  </div>
+                 <div>
+  <Link to="/signin">
+    <button className="px-4 py-1 ml-3 my-2  bg-red-500 text-white rounded-lg shadow-md 
+      hover:bg-red-600 hover:shadow-lg active:scale-95 transition">
+      Log out
+    </button>
+  </Link>
+</div>
+
                 </div>
               </div>
             )}
