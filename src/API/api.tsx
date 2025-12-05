@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const API = axios.create({
-  // baseURL: "http://10.10.13.99:8001",
-  baseURL: "http://10.10.13.99:8001/",
+  baseURL: "http://10.10.13.99:8001",
+  // baseURL: "https://mahamudh474.pythonanywhere.com/",
 });
 
 // Attach token for every request
@@ -216,6 +216,12 @@ export const getpendingsocietyData = (id: string | number) => {
     (res) => res.data
   );
 };
+// post rejct
+export const rejectpost = (postId: string | number) => {
+  return API.post(
+    `/api/social/posts/${postId}/reject/` // ekhanehoito post id dite hobe
+  ).then((res) => res.data);
+};
 //pending members
 export const getpendingsocietymembers = (id: string | number) => {
   return API.get(
@@ -280,21 +286,22 @@ export const createproduct = (payload: any) => {
   return API.post("/api/shop/products/", payload).then((res) => res.data);
 };
 
-// approve post 
+// approve post
 export const approvePost = (postId: string | number) => {
   return API.post(`/api/social/posts/${postId}/approve/`).then(
     (res) => res.data
   );
-}
+};
 // reject post
 export const rejectPost = (postId: string | number) => {
   return API.post(`/api/social/posts/${postId}/reject/`).then(
     (res) => res.data
   );
-}
+};
 
 export const getPendingPosts = (societyId: string | number) =>
-  API.get(`/api/social/societies/${societyId}/pending-posts/`)
-    .then((res) => res.data);
+  API.get(`/api/social/societies/${societyId}/pending-posts/`).then(
+    (res) => res.data
+  );
 
 export default API;

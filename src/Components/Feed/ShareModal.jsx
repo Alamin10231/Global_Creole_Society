@@ -1,182 +1,205 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, ChevronRight } from "lucide-react";
-import { feedsharepost, feedbulsharepost } from "../../API/api"; // adjust path
+import { useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
+import { feedsharepost, feedbulsharepost } from "../../API/api";
 
-const ShareModal = ({ isOpen, onClose, postData }) => {
+const ShareModal = ({ isOpen, onClose, postData, societyList }) => {
   const [shareMessage, setShareMessage] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedUsers] = useState([]);
   const [selectedSocieties, setSelectedSocieties] = useState([]);
+  const navigate = useNavigate();
+  const modalRef = useRef(null);
 
-  const popupRef = useRef(null);
+  // Select User
+  // Keep for future direct message selection (currently unused)
+  // const handleUserSelect = (userId) => {
+  //   setSelectedUsers((prev) =>
+  //     prev.includes(userId)
+  //       ? prev.filter((id) => id !== userId)
+  //       : [...prev, userId]
+  //   );
+  // };
 
-  // Mock data for users and societies
-  const mockUsers = [
-    { id: 1, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
-    { id: 2, name: "Ahmad", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg" },
-  ];
-
-  const mockSocieties = [
-    { id: 1, name: "Society A", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: true },
-    { id: 2, name: "Society B", avatar: "https://t3.ftcdn.net/jpg/06/99/46/60/360_F_699466075_DaPTBNlNQTOwwjkOiFEoOvzDV0ByXR9E.jpg", isSelected: false },
-  ];
-
-  const handleUserSelect = (userId) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
-  };
-
+  // Select Society
   const handleSocietySelect = (societyId) => {
     setSelectedSocieties((prev) =>
-      prev.includes(societyId) ? prev.filter((id) => id !== societyId) : [...prev, societyId]
+      prev.includes(societyId)
+        ? prev.filter((id) => id !== societyId)
+        : [...prev, societyId]
     );
   };
 
-  // Share single post (Inbox/Individual)
+  // Share Now = Single Society
   const handleShareNow = async () => {
     if (!postData?.id) return;
-
     try {
-      const payload = {
+      await feedsharepost({
         post_id: postData.id,
         share_caption: shareMessage,
-        society_id: selectedSocieties.length > 0 ? selectedSocieties[0] : null, // first selected society
-      };
-
-      const response = await feedsharepost(payload);
-      console.log("Single Share Successful:", response);
+        society_id: selectedSocieties[0] || null,
+      });
       onClose();
-    } catch (error) {
-      console.error("Single Share Error:", error);
+      navigate("/chat");
+    } catch (err) {
+      console.log("Share Error", err);
     }
   };
 
-  // Share bulk (Group/Society)
-  const handleShare = async () => {
+  // Bulk Share = Multi User/Society
+  const handleBulkShare = async () => {
     if (!postData?.id) return;
-
     try {
-      const payload = {
+      await feedbulsharepost({
         post_id: postData.id,
         share_caption: shareMessage,
-        society_ids: selectedSocieties.length > 0 ? selectedSocieties : [], // send array for bulk
-        user_ids: selectedUsers.length > 0 ? selectedUsers : [], // send array of user IDs
-      };
-
-      const response = await feedbulsharepost(payload);
-      console.log("Bulk Share Successful:", response);
+        user_ids: selectedUsers,
+        society_ids: selectedSocieties,
+      });
       onClose();
-    } catch (error) {
-      console.error("Bulk Share Error:", error);
+      navigate("/chat");
+    } catch (err) {
+      console.log("Bulk Share Error", err);
     }
   };
 
-  // Close modal on outside click
+  // Close outside click
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
+    const handler = (e) => {
+      if (modalRef.current && !modalRef.current.contains(e.target)) {
         onClose();
       }
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/15 flex items-center justify-center z-50 transition-opacity duration-300">
+    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
       <div
-        ref={popupRef}
-        className="bg-white rounded-xl w-[50%] max-h-[90vh] overflow-hidden transform transition-transform duration-500 ease-out min-w-[420px]"
+        ref={modalRef}
+        className="bg-white rounded-xl w-[600px] max-h-[90vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Share</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h2 className="text-xl font-semibold">Share</h2>
+          <button onClick={onClose}>
             <X className="w-6 h-6 text-gray-500" />
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
-          {/* Caption input */}
-          <div className="px-4 py-3 border-b border-gray-100">
-            <div className="flex items-center space-x-3 mb-3">
-              <img
-                src="https://media.istockphoto.com/id/492529287/photo/portrait-of-happy-laughing-man.jpg?s=612x612&w=0&k=20&c=0xQcd69Bf-mWoJYgjxBSPg7FHS57nOfYpZaZlYDVKRE="
-                alt="User"
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              <span className="font-bold text-gray-900">Your Name</span>
-            </div>
-
+        {/* Body */}
+        <div className="overflow-y-auto flex-1">
+          {/* Caption */}
+          <div className="p-4 border-b">
             <textarea
               value={shareMessage}
               onChange={(e) => setShareMessage(e.target.value)}
-              placeholder="Say something about this (optional)"
-              className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Say something about this post..."
+              className="w-full p-3 border rounded-lg resize-none focus:ring focus:ring-blue-500"
               rows={4}
             />
+            <div className="text-right mt-2"></div>
+          </div>
 
-            <div className="flex justify-end mt-3">
+          {/* Send in Message */}
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Send in Message</h3>
+
               <button
                 onClick={handleShareNow}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
+                className={`px-4 py-2 rounded-lg text-white ${
+                  selectedSocieties.length > 0
+                    ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                    : "bg-gray-300 cursor-not-allowed"
+                }`}
+                disabled={selectedSocieties.length === 0}
               >
                 Share now
               </button>
             </div>
-          </div>
 
-          {/* Send in Message */}
-          <div className="px-4 py-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Send in Message</h3>
-            <div className="flex items-center space-x-3 overflow-x-auto pb-2 gap-5">
-              {mockUsers.map((user) => (
-                <div key={user.id} className="flex-shrink-0 text-center">
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {societyList?.results?.map((society) => (
+                <div key={society.id} className="text-center flex-shrink-0">
                   <button
-                    onClick={() => handleUserSelect(user.id)}
-                    className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${
-                      selectedUsers.includes(user.id) ? "border-blue-500" : "border-gray-200 hover:border-gray-300"
+                    onClick={() => handleSocietySelect(society.id)}
+                    className={`w-12 h-12 rounded-full border-2 overflow-hidden ${
+                      selectedSocieties.includes(society.id)
+                        ? "border-blue-500"
+                        : "border-gray-300"
                     }`}
                   >
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    <img
+                      src={
+                        society.logo ||
+                        society.other_participant?.profile_image ||
+                        "https://via.placeholder.com/50"
+                      }
+                      alt={society.name}
+                      className="w-full h-full object-cover"
+                    />
                   </button>
-                  <span className="text-xs text-gray-600 mt-1 block">{user.name}</span>
+                  <span className="text-xs block mt-1">{society.name}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Send in Society */}
-          <div className="px-4 py-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Send in Society</h3>
-            <div className="flex items-center space-x-3 overflow-x-auto pb-2 gap-5">
-              {mockSocieties.map((society) => (
-                <div key={society.id} className="flex-shrink-0 text-center">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Send in Society</h3>
+              <button
+                onClick={() => navigate("/chat")}
+                className="text-blue-600 text-xs font-semibold hover:underline cursor-pointer"
+              >
+                Go to Chat
+              </button>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {societyList?.results?.map((society) => (
+                <div key={society.id} className="text-center flex-shrink-0">
                   <button
                     onClick={() => handleSocietySelect(society.id)}
-                    className={`relative w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${
-                      selectedSocieties.includes(society.id) || society.isSelected ? "border-blue-500" : "border-gray-200 hover:border-gray-300"
+                    className={`w-12 h-12 rounded-full border-2 overflow-hidden ${
+                      selectedSocieties.includes(society.id)
+                        ? "border-blue-500"
+                        : "border-gray-300"
                     }`}
                   >
-                    <img src={society.avatar} alt={society.name} className="w-full h-full object-cover" />
+                    <img
+                      src={
+                        society.logo ||
+                        society.profile_image ||
+                        "https://via.placeholder.com/50"
+                      }
+                      alt={society.name}
+                      className="w-full h-full object-cover"
+                    />
                   </button>
-                  <span className="text-xs text-gray-600 mt-1 block">{society.name}</span>
+                  <span className="text-xs block mt-1">{society.name}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Bottom Bulk Share */}
-        <div className="p-4 border-t border-gray-200 flex justify-end">
+        {/* Footer */}
+        <div className="p-4 border-t flex justify-end">
           <button
-            onClick={handleShare}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
+            onClick={handleBulkShare}
+            className={`px-6 py-2 rounded-lg text-white ${
+              selectedSocieties.length > 0
+                ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
+            disabled={selectedSocieties.length === 0}
           >
             Share
           </button>

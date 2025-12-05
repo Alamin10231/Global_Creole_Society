@@ -2,7 +2,7 @@ import React from "react";
 import { FaShareFromSquare } from "react-icons/fa6";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { approvePost } from "../../API/api";
+import { approvePost, rejectpost } from "../../API/api";
 
 const PendingPostCard = ({ post, onShare, onApproved }) => {
   const queryClient = useQueryClient();
@@ -17,6 +17,18 @@ const PendingPostCard = ({ post, onShare, onApproved }) => {
     onError: () => toast.error("Approval failed"),
   });
 
+  const {mutate:reject } =  useMutation({
+    mutationFn: () => rejectpost(post.id),
+    onSuccess: () => {
+      toast.success("Post Rejected!");
+      queryClient.invalidateQueries(["pendingPosts"]);
+      if (onApproved) onApproved(post.id);
+    },
+    onError: () => toast.error("Rejection failed"),
+  });
+const handleReject = () => {
+  reject();
+}
   const avatar = post.user?.profile_image || "/placeholder.svg";
   const username = post.user?.profile_name || "Unknown User";
 
@@ -58,7 +70,9 @@ const PendingPostCard = ({ post, onShare, onApproved }) => {
 
       {/* ACTION BUTTONS */}
       <div className="flex gap-4 border-t pt-3">
-        <button className="flex-1 py-2 border rounded-lg">Decline</button>
+        <button
+        onClick={()=>handleReject()}
+        className="flex-1 py-2 border rounded-lg">Decline</button>
 
         <button
           onClick={() => approve()}
