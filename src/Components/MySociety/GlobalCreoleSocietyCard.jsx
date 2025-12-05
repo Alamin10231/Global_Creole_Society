@@ -4,8 +4,8 @@ import SocietyImgUpload from "./SocietyImgUpload";
 import { useNavigate, useParams } from "react-router-dom";
 import { formatTimestamp } from "../../Hook/TimeFormat";
 import { useQuery } from "@tanstack/react-query";
-import { getpendingsocietyData } from "../../API/api";
-
+import { getpendingsocietyData, getpendingsocietymembers } from "../../API/api";
+// import { getpendingsocietymembers } from "../../API/api"
 const GlobalCreoleSocietyCard = ({ societyData }) => {
   const navigate = useNavigate();
 
@@ -19,9 +19,11 @@ const GlobalCreoleSocietyCard = ({ societyData }) => {
     enabled: !!id,
   });
 
-  console.log("showmembers:", showmembers);
-
-  console.log("showmembers:", showmembers);
+  const { data: pendingMembers } = useQuery({
+    queryKey: ["pendingMembers",id],
+    queryFn: () => getpendingsocietymembers(id),
+  });
+ 
   return (
     <div className=" rounded-xl mx-auto flex flex-col items-center text-center">
       <div className=" relative bg-white w-full p rounded-xl p-4 mt-20 lg:mt-36 pt-15">
@@ -89,7 +91,7 @@ const GlobalCreoleSocietyCard = ({ societyData }) => {
           className="mb-4 flex justify-between bg-white rounded-lg p-2 px-4 cursor-pointer transform transition-transform duration-700 ease-in-out hover:scale-101"
         >
           <p className="text-gray-600 font-semibold">Pending Members</p>
-          <p className="text-lg font-bold">12</p>
+          <p className="text-lg font-bold">{pendingMembers?.count}</p>
         </div>
         <div className="mb-4 bg-white rounded-lg p-2 px-4">
           <div className="flex justify-between items-center mb-2">

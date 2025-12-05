@@ -17,7 +17,7 @@ import {
   getMemberships,
   seethepost,
   toggleLike,
-  getPendingPosts,
+  
 } from "../../API/api";
 import { useParams } from "react-router-dom";
 import MySocietycreatepost from "./MySocietycreatepost";
@@ -31,7 +31,7 @@ const MySociety = () => {
     queryFn: () => getsocietyData(id),
     enabled: !!id,
   });
-  // pending post 
+
   
 
   // Society Members

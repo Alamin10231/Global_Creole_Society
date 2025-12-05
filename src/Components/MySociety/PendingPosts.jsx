@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import Navbar from "../Navbar";
 import { RiMenuAddLine } from "react-icons/ri";
 import PendingPostCard from "./PendingPostCard";
-import { getPendingPosts } from "../../API/api";
+import { getPendingPosts, rejectpost } from "../../API/api";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
 const PendingPosts = () => {
-  const { id: societyId } = useParams(); // ✔ FIXED
+  const { id: societyId } = useParams(); 
 
   console.log("Society ID:", societyId);
 
@@ -15,13 +15,26 @@ const PendingPosts = () => {
   const { data: pendingPosts, isLoading } = useQuery({
     queryKey: ["pendingPosts", societyId],
     queryFn: () => getPendingPosts(societyId),
-    enabled: !!societyId, // only run if ID exists
+    enabled: !!societyId,
   });
-
-  console.log("🔥 Pending Posts API Response:", pendingPosts);
 
   const [removedIds, setRemovedIds] = useState([]);
 
+  // -----------------------------
+  // 🔥 Reject Post Handler
+  // -----------------------------
+  const handleReject = async (postId) => {
+    try {
+      await rejectpost(postId);       // ✔ Only send POST ID
+      setRemovedIds((prev) => [...prev, postId]); // remove from UI
+    } catch (error) {
+      console.error("Reject Error:", error);
+    }
+  };
+
+  console.log("🔥 Pending Posts API Response:", pendingPosts);
+
+  // remove posts that were rejected or approved
   const postsToShow = pendingPosts?.results?.filter(
     (post) => !removedIds.includes(post.id)
   );
@@ -63,9 +76,8 @@ const PendingPosts = () => {
                 key={post.id}
                 post={post}
                 onShare={() => {}}
-                onApproved={(id) =>
-                  setRemovedIds((prev) => [...prev, id])
-                }
+                onApproved={(id) => setRemovedIds((prev) => [...prev, id])}
+                onReject={() => handleReject(post.id)} // <-- ✔ Added reject here
               />
             ))
           ) : (

@@ -8,7 +8,13 @@ import PostCard from "./PostCard";
 import CommentsModal from "./CommentsModal";
 import ShareModal from "./ShareModal";
 import { toast } from "sonner";
-import { createpost, getpost, seethepost, toggleLike } from "../../API/api";
+import {
+  createpost,
+  getchatlist,
+  getpost,
+  seethepost,
+  toggleLike,
+} from "../../API/api";
 // import { createpost, getpost, seethepost, likePost } from "../../API/api";
 
 const mockStories = [
@@ -41,7 +47,7 @@ const SocialFeed = () => {
         const createdId = data?.id;
         if (createdId) {
           toast.success("Post created successfully!");
-    queryClient.invalidateQueries(["posts"]); 
+          queryClient.invalidateQueries(["posts"]);
         }
       } catch (err) {
         console.error("Error fetching created post:", err);
@@ -55,6 +61,18 @@ const SocialFeed = () => {
 
   const handleCreatePost = (postData) => postMutation.mutate(postData);
 
+  // share modal state
+  const { data: societyList } = useQuery({
+    queryKey: ["share-list"],
+    queryFn: getchatlist,
+  });
+  // Suggested friends for sharing (alternate source)
+  // const { data: suggestedFriends = [] } = useQuery({
+  //   queryKey: ["share-suggestions"],
+  //   queryFn: suggessionfriend,
+  // });
+
+  console.log("chatlist", societyList);
   // ----------------------------------------------------
   // LIKE SYSTEM MUTATION
   // ----------------------------------------------------
@@ -109,6 +127,7 @@ const SocialFeed = () => {
         isOpen={!!activeSharePostId}
         onClose={() => setActiveSharePostId(null)}
         postId={activeSharePostId}
+        societyList={societyList}
       />
 
       <CommentsModal
