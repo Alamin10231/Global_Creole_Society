@@ -1,209 +1,139 @@
 "use client";
-
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { feedsharepost, feedbulsharepost } from "../../API/api";
+import { toast } from "sonner";
+// import { sharePostBulk, getInboxUsers } from "../../API/api";
+import { useNavigate } from "react-router-dom";
+import { getInboxUsers, sharePostBulk } from "../../API/api";
 
-const ShareModal = ({ isOpen, onClose, postData, societyList }) => {
+const ShareModal = ({ isOpen, onClose, postId }) => {
   const [shareMessage, setShareMessage] = useState("");
-  const [selectedUsers] = useState([]);
-  const [selectedSocieties, setSelectedSocieties] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const popupRef = useRef(null);
   const navigate = useNavigate();
-  const modalRef = useRef(null);
 
-  // Select User
-  // Keep for future direct message selection (currently unused)
-  // const handleUserSelect = (userId) => {
-  //   setSelectedUsers((prev) =>
-  //     prev.includes(userId)
-  //       ? prev.filter((id) => id !== userId)
-  //       : [...prev, userId]
-  //   );
-  // };
+  // Fetch Inbox Users
+  const { data: inboxUsers, isLoading } = useQuery({
+    queryKey: ["inboxUsers"],
+    queryFn: getInboxUsers,
+    enabled: isOpen,
+  });
 
-  // Select Society
-  const handleSocietySelect = (societyId) => {
-    setSelectedSocieties((prev) =>
-      prev.includes(societyId)
-        ? prev.filter((id) => id !== societyId)
-        : [...prev, societyId]
+  const toggleSelectUser = (userId) => {
+    setSelectedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
     );
   };
 
-  // Share Now = Single Society
-  const handleShareNow = async () => {
-    if (!postData?.id) return;
-    try {
-      await feedsharepost({
-        post_id: postData.id,
-        share_caption: shareMessage,
-        society_id: selectedSocieties[0] || null,
-      });
-      onClose();
-      navigate("/chat");
-    } catch (err) {
-      console.log("Share Error", err);
+  const handleShare = async () => {
+    if (!postId || selectedUsers.length === 0) {
+      toast.error("Please select at least one user");
+      return;
     }
-  };
-
-  // Bulk Share = Multi User/Society
-  const handleBulkShare = async () => {
-    if (!postData?.id) return;
     try {
-      await feedbulsharepost({
-        post_id: postData.id,
-        share_caption: shareMessage,
+      await sharePostBulk({
+        post_id: postId,
         user_ids: selectedUsers,
-        society_ids: selectedSocieties,
+        society_ids: [],
+        share_caption: shareMessage,
       });
+      toast.success("Shared successfully!");
+      setSelectedUsers([]);
+      setShareMessage("");
       onClose();
       navigate("/chat");
-    } catch (err) {
-      console.log("Bulk Share Error", err);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to share post");
     }
   };
 
-  // Close outside click
+  // Close modal on click outside
   useEffect(() => {
-    const handler = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
         onClose();
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
       <div
-        ref={modalRef}
-        className="bg-white rounded-xl w-[600px] max-h-[90vh] flex flex-col overflow-hidden"
+        ref={popupRef}
+        className="bg-white rounded-xl w-[50%] max-h-[90vh] overflow-auto min-w-[420px] p-4 relative"
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold">Share</h2>
-          <button onClick={onClose}>
-            <X className="w-6 h-6 text-gray-500" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="overflow-y-auto flex-1">
-          {/* Caption */}
-          <div className="p-4 border-b">
-            <textarea
-              value={shareMessage}
-              onChange={(e) => setShareMessage(e.target.value)}
-              placeholder="Say something about this post..."
-              className="w-full p-3 border rounded-lg resize-none focus:ring focus:ring-blue-500"
-              rows={4}
-            />
-            <div className="text-right mt-2"></div>
-          </div>
-
-          {/* Send in Message */}
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">Send in Message</h3>
-
-              <button
-                onClick={handleShareNow}
-                className={`px-4 py-2 rounded-lg text-white ${
-                  selectedSocieties.length > 0
-                    ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
-                disabled={selectedSocieties.length === 0}
-              >
-                Share now
-              </button>
-            </div>
-
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {societyList?.results?.map((society) => (
-                <div key={society.id} className="text-center flex-shrink-0">
-                  <button
-                    onClick={() => handleSocietySelect(society.id)}
-                    className={`w-12 h-12 rounded-full border-2 overflow-hidden ${
-                      selectedSocieties.includes(society.id)
-                        ? "border-blue-500"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <img
-                      src={
-                        society.logo ||
-                        society.other_participant?.profile_image ||
-                        "https://via.placeholder.com/50"
-                      }
-                      alt={society.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                  <span className="text-xs block mt-1">{society.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Send in Society */}
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">Send in Society</h3>
-              <button
-                onClick={() => navigate("/chat")}
-                className="text-blue-600 text-xs font-semibold hover:underline cursor-pointer"
-              >
-                Go to Chat
-              </button>
-            </div>
-
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {societyList?.results?.map((society) => (
-                <div key={society.id} className="text-center flex-shrink-0">
-                  <button
-                    onClick={() => handleSocietySelect(society.id)}
-                    className={`w-12 h-12 rounded-full border-2 overflow-hidden ${
-                      selectedSocieties.includes(society.id)
-                        ? "border-blue-500"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <img
-                      src={
-                        society.logo ||
-                        society.profile_image ||
-                        "https://via.placeholder.com/50"
-                      }
-                      alt={society.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                  <span className="text-xs block mt-1">{society.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t flex justify-end">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Share Post</h2>
           <button
-            onClick={handleBulkShare}
-            className={`px-6 py-2 rounded-lg text-white ${
-              selectedSocieties.length > 0
-                ? "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                : "bg-gray-300 cursor-not-allowed"
-            }`}
-            disabled={selectedSocieties.length === 0}
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-full"
           >
-            Share
+            <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Caption Input */}
+        <textarea
+          value={shareMessage}
+          onChange={(e) => setShareMessage(e.target.value)}
+          placeholder="Say something about this (optional)"
+          className="w-full p-3 border border-gray-200 rounded-lg resize-none mb-4"
+          rows={4}
+        />
+
+        {/* Inbox Users */}
+        <div className="mb-4">
+          <h3 className="font-medium mb-2">Send in Inbox</h3>
+          {isLoading ? (
+            <p>Loading users...</p>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto">
+              {inboxUsers?.results?.map((user) => {
+                const u = user.other_participant;
+                return (
+                  <div
+                    key={u.id}
+                    className="flex flex-col items-center cursor-pointer"
+                  >
+                    <div
+                      onClick={() => toggleSelectUser(u.id)}
+                      className={`w-12 h-12 rounded-full overflow-hidden border-2 ${
+                        selectedUsers.includes(u.id)
+                          ? "border-blue-600"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <img
+                        src={u.profile_image || "/avatar.png"}
+                        alt={u.profile_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-xs mt-1">{u.profile_name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Share Button */}
+        <button
+          onClick={handleShare}
+          className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Share
+        </button>
       </div>
     </div>
   );

@@ -22,7 +22,6 @@ const LoginPage = () => {
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-
       toast.success("Login successful!");
       navigate("/feed");
     },
@@ -30,6 +29,7 @@ const LoginPage = () => {
       toast.error(err.response?.data?.detail || "Login failed");
     },
   });
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -39,6 +39,8 @@ const LoginPage = () => {
   const togglePasswordVisibility = () => {
     setFormData((prev) => ({ ...prev, showPassword: !prev.showPassword }));
   };
+
+  console.log(import.meta.env.VITE_API_BASE_URL)
 
   const handleSubmit = (e) => {
     e.preventDefault();

@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { signup } from "../../API/api";
 import { p } from "framer-motion/client";
 
-const SignUpPage = ({ onSwitchToLogin }) => {
+const SignUpPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     profileName: "",
