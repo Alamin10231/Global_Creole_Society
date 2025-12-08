@@ -5,26 +5,43 @@ import { FiSearch } from "react-icons/fi";
 import { RiMenuAddLine } from "react-icons/ri";
 import Navbar from "../Navbar";
 import { motion, AnimatePresence } from "framer-motion";
-import { getpendingsocietymembers } from "../../API/api";
+
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getpendingsocietymembers, approvemember } from "../../API/api";
+import { toast } from "sonner";
 
 function PendingMembers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showMenu, setShowMenu] = useState(false);
 
-  // ✔ Correct extraction
   const { id } = useParams();
+  const queryClient = useQueryClient();
 
-  // ✔ Fetch actual API data
+  // Fetch pending members
   const { data: pendingMembers, isLoading } = useQuery({
     queryKey: ["pendingMembers", id],
     queryFn: () => getpendingsocietymembers(id),
     enabled: !!id,
   });
 
+  // Approve mutation
+  const { mutate: approveMember, isLoading: isApproving } = useMutation({
+    mutationFn: (memberId) => approvemember(id, memberId),
+    onSuccess: () => {
+      toast.success("Member Approved 🎉");
+      queryClient.invalidateQueries(["pendingMembers", id]);
+    },
+    onError: () => {
+      toast.error("Approval Failed ❌");
+    },
+  });
+
+  // Filter by search
   const filteredMembers = pendingMembers?.results?.filter((m) =>
-    m.user.profile_name.toLowerCase().includes(searchQuery.toLowerCase())
+    m.user?.profile_name
+      ?.toLowerCase()
+      .includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -32,7 +49,8 @@ function PendingMembers() {
       <Navbar />
 
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Search bar */}
+        
+        {/* Search */}
         <div className="bg-white shadow-sm px-4 py-3 rounded-xl flex items-center gap-3">
           <div className="relative flex-1">
             <FiSearch className="absolute top-3 left-3 text-gray-400" size={20} />
@@ -62,20 +80,23 @@ function PendingMembers() {
               className="bg-white mt-2 rounded-lg shadow-md p-4"
             >
               <p className="text-gray-600 text-sm">
-                ⚙️ Future actions: Sort, Filter, Bulk Approve, etc.
+                ⚙️ Future actions: Sort, Bulk Approve, Filter, etc.
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* Heading */}
         <h3 className="my-6 text-3xl font-bold text-gray-800">
           Pending Members
         </h3>
 
         {/* Loading */}
-        {isLoading && <p>Loading...</p>}
+        {isLoading && (
+          <p className="text-gray-500">Loading...</p>
+        )}
 
-        {/* Members Grid */}
+        {/* Members List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence>
             {filteredMembers?.map((m) => (
@@ -88,28 +109,32 @@ function PendingMembers() {
                 transition={{ duration: 0.2 }}
                 className="bg-white rounded-lg p-4 shadow flex items-center justify-between"
               >
+                {/* User Info */}
                 <div className="flex items-center gap-3">
                   <img
                     src={
-                      m.user.profile_image ||
-                      "https://ui-avatars.com/api/?name=" + m.user.profile_name
+                      m.user?.profile_image ||
+                      `https://ui-avatars.com/api/?name=${m.user?.profile_name}`
                     }
-                    alt={m.user.profile_name}
+                    alt={m.user?.profile_name}
                     className="w-12 h-12 rounded-full object-cover"
                   />
 
                   <div>
                     <h3 className="font-semibold text-gray-900">
-                      {m.user.profile_name}
+                      {m.user?.profile_name}
                     </h3>
-                    <p className="text-xs text-gray-500">{m.user.email}</p>
+                    <p className="text-xs text-gray-500">{m.user?.email}</p>
                   </div>
                 </div>
 
+                {/* Approve Button */}
                 <button
-                  className="ml-3 px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg"
+                  onClick={() => approveMember(m.id)}
+                  disabled={isApproving}
+                  className="ml-3 px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg disabled:opacity-50"
                 >
-                  Approve
+                  {isApproving ? "Approving..." : "Approve"}
                 </button>
               </motion.div>
             ))}
@@ -126,8 +151,7 @@ function PendingMembers() {
         {/* Count */}
         {pendingMembers && (
           <div className="mt-8 text-center text-sm text-gray-500">
-            Showing {filteredMembers?.length} of {pendingMembers?.count} pending
-            members
+            Showing {filteredMembers?.length} of {pendingMembers?.count}
           </div>
         )}
       </div>

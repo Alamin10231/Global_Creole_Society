@@ -9,6 +9,7 @@ function ChatWindow({ chat, messages }) {
   const navigate = useNavigate();
   const currentUserId = localStorage.getItem("userId");
   const token = localStorage.getItem("accessToken");
+console.log("Current User ID:", currentUserId, "Token:", token);
 
   const [socket, setSocket] = useState(null);
 

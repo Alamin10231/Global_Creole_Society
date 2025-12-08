@@ -1,9 +1,13 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://10.10.13.99:8001",
+  // baseURL: import.meta.env.local.VITE_API_BASE_URL,
+  // baseURL: "http://10.10.13.99:8001/",
+  // baseURL: "https://sisterlike-tastelessly-mike.ngrok-free.dev/",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   // baseURL: "https://mahamudh474.pythonanywhere.com/",
 });
+// console.log(import.meta.env.VITE_API_BASE_URL);
 
 // Attach token for every request
 API.interceptors.request.use((config) => {
@@ -78,8 +82,13 @@ export const feedbulsharepost = (payload: any) => {
   );
 };
 
-export const createpost = (formData: any) =>
-  API.post("/api/social/posts/create/", formData).then((res) => res.data);
+export const createpost = (postData: FormData) => {
+  return API.post("/api/social/posts/create/", postData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  }).then((res) => res.data);
+};
 //like post
 export const toggleLike = (postId: string | number) =>
   API.post(`/api/social/posts/${postId}/like/`).then((res) => res.data);
@@ -238,6 +247,15 @@ export const approvepost = (
   ).then((res) => res.data);
 };
 
+export const approvemember = (
+  societyId: string | number,
+  memberId: string | number
+) => {
+  return API.post(
+    `/api/social/societies/${societyId}/memberships/${memberId}/approve/`
+  ).then((res) => res.data);
+};
+// /api/social/societies/{society_pk}/memberships/{membership_pk}/approve/
 // show memberships
 export const getMemberships = (id: string | number) => {
   return API.get(`/api/social/societies/${id}/members/`).then(
@@ -303,5 +321,24 @@ export const getPendingPosts = (societyId: string | number) =>
   API.get(`/api/social/societies/${societyId}/pending-posts/`).then(
     (res) => res.data
   );
-
+// story
+export const getstories = async () => {
+  const res = await API.get("/api/social/stories/");
+  return res.data;
+};
+export const poststories = (payload: any) =>
+  API.post("/api/social/stories/create/", payload).then((res) => res.data);
 export default API;
+export const feedSharePost = async (data: any) => {
+  const res = await API.post("/api/social/posts/share/", data);
+  return res.data;
+};
+
+export const getInboxUsers = async () => {
+  const res = await API.get("/api/chat/conversations/");
+  return res.data;
+};
+export const sharePostBulk = async (payload: any) => {
+  const res = await API.post("/api/social/posts/share-bulk/", payload);
+  return res.data;
+};
